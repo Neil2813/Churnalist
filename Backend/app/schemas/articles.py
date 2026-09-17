@@ -1,0 +1,59 @@
+"""Pydantic schemas for Article records and version history."""
+from __future__ import annotations
+
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.core.constants import ExtractionStatus, SourceType
+
+
+class ArticleVersionResponse(BaseModel):
+    """Snapshot version of an article's previous content."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    article_id: str
+    version_number: int
+    content_hash: str
+    retrieved_at: datetime
+    change_type: str | None = None
+    change_summary: str | None = None
+
+
+class ArticleResponse(BaseModel):
+    """Summary representation of an ingested news article."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    event_id: str | None = None
+    source_id: str | None = None
+
+    url: str
+    canonical_url: str | None = None
+    url_hash: str
+
+    title: str | None = None
+    subtitle: str | None = None
+    author: str | None = None
+
+    language: str | None = None
+    language_confidence: float | None = None
+    country: str | None = None
+
+    published_at: datetime | None = None
+    retrieved_at: datetime | None = None
+
+    source_type: SourceType
+    extraction_status: ExtractionStatus
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class ArticleDetailResponse(ArticleResponse):
+    """Detailed view of an article including full text and version history."""
+    content: str | None = None
+    content_hash: str | None = None
+    metadata_json: str | None = None
+    versions: list[ArticleVersionResponse] = Field(default_factory=list)
