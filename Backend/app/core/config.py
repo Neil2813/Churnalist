@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -56,9 +56,33 @@ class Settings(BaseSettings):
     drift_engine_version: int = 1
     report_version: int = 1
 
-    # ── News API keys (optional – system degrades gracefully without them) ───
-    gnews_api_key: str = ""
-    newsdata_api_key: str = ""
+    # ── News API keys & Endpoints (optional – system degrades gracefully) ─────
+    gnews_api_key: str = Field("", validation_alias=AliasChoices("gnews_api_key", "gnews"))
+    newsdata_api_key: str = Field("", validation_alias=AliasChoices("newsdata_api_key", "newsdata"))
+    mediastack_api_key: str = Field("", validation_alias=AliasChoices("mediastack_api_key", "mediastack"))
+    currents_api_key: str = Field("", validation_alias=AliasChoices("currents_api_key", "currents"))
+    thenewsapi_api_key: str = Field("", validation_alias=AliasChoices("thenewsapi_api_key", "thenewsapi", "the_news_api"))
+    guardian_api_key: str = Field("", validation_alias=AliasChoices("guardian_api_key", "guardians", "guardian"))
+    spaceflight_url: str = Field("https://api.spaceflightnewsapi.net/v4/articles/", validation_alias=AliasChoices("spaceflight_url", "spaceflight"))
+    newsflash_api_key: str = Field("", validation_alias=AliasChoices("newsflash_api_key", "news_flash", "newsflash"))
+
+    @field_validator(
+        "gnews_api_key",
+        "newsdata_api_key",
+        "mediastack_api_key",
+        "currents_api_key",
+        "thenewsapi_api_key",
+        "guardian_api_key",
+        "newsflash_api_key",
+        mode="before",
+    )
+    @classmethod
+    def clean_api_keys(cls, v: Any) -> str:
+        if not v or not isinstance(v, str):
+            return ""
+        # Strip inline comments and whitespace
+        val = v.split("#")[0].strip()
+        return val
 
     # ── Retrieval scoring weights ─────────────────────────────────────────────
     score_weight_embedding: float = 0.30
