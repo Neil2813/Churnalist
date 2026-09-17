@@ -76,8 +76,12 @@ class LanguageDetectionError(DriftError):
 class NewsProviderError(DriftError):
     error_code = "NEWS_PROVIDER_ERROR"
 
+class ExternalServiceError(DriftError):
+    error_code = "EXTERNAL_SERVICE_ERROR"
+
 class NewsProviderRateLimitError(NewsProviderError):
     error_code = "NEWS_PROVIDER_RATE_LIMITED"
+
 
 
 # ── LLM ──────────────────────────────────────────────────────────────────────
