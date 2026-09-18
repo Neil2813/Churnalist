@@ -16,7 +16,7 @@ async def get_top_news() -> List[Dict[str, Any]]:
     provider = GNewsProvider(query="latest news")
     
     try:
-        raw_docs = await provider.fetch_latest(limit=6)
+        raw_docs = await provider.fetch_latest(limit=8)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
         
@@ -30,9 +30,18 @@ async def get_top_news() -> List[Dict[str, Any]]:
             except Exception:
                 pass
                 
-        # Assign category randomly or just use a default
-        categories = ["WORLD", "POLITICS", "BUSINESS", "TECH", "SCIENCE"]
-        category = categories[i % len(categories)]
+        # Smart category assignment based on keywords
+        text = ((doc.title or "") + " " + (doc.content or "")).lower()
+        if any(w in text for w in ["market", "bank", "economy", "stock", "business", "crore", "lakh", "trade", "finance"]):
+            category = "BUSINESS"
+        elif any(w in text for w in ["tech", "apple", "google", "ai", "software", "startup", "cyber", "digital"]):
+            category = "TECH"
+        elif any(w in text for w in ["election", "vote", "minister", "government", "policy", "bjp", "congress", "cm", "parliament", "leader"]):
+            category = "POLITICS"
+        elif any(w in text for w in ["sport", "cricket", "match", "games", "olympics", "medal", "tennis", "football", "bcci"]):
+            category = "SPORTS"
+        else:
+            category = "WORLD"
         
         # We need an id, fallback to uuid if not present
         doc_id = str(uuid.uuid4())
@@ -44,7 +53,7 @@ async def get_top_news() -> List[Dict[str, Any]]:
             "title": doc.title or "Untitled",
             "excerpt": (doc.content or "")[:200] + ("..." if len(doc.content or "") > 200 else ""),
             "source": doc.source_name or "GNews",
-            "link": f"/investigate/{doc_id}",
+            "link": doc.url or f"/investigate/{doc_id}",
             "imageUrl": "https://images.openai.com/static-rsc-4/yfR8vPBESFSSsvbi4mJU8PpZgnAh1CdFgAaDsyiK0VYy768KbX4OoQP-w-0xufTt6Q6uhwalI-yd6Nfwyl5EAtSar0qSaDhDJkiiVWCKGyXaK0VJCvLW280Pyowk7T0kAGbhD-vsoJ2yvJp6pEH1956xStkPz5N2zYjMu5ZE__LOaJTBU9aotfXFMMYuknFy?purpose=fullsize" if i == 0 else None,
             "isMain": i == 0
         })

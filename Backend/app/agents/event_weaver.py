@@ -98,3 +98,20 @@ class EventWeaverAgent:
             "shared_entities": shared_entities,
             "semantic_similarity": round(similarity_score, 4),
         }
+
+    async def align_articles(
+        self,
+        event_id: str,
+        articles: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Align candidate articles within an event cluster."""
+        if not articles or len(articles) < 2:
+            return []
+        primary = articles[0]
+        event_info = {"title": primary.get("title", ""), "id": event_id}
+        results = []
+        for cand in articles[1:]:
+            res = await self.align_candidate_article(event_info, cand)
+            results.append(res)
+        return results
+

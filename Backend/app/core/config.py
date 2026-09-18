@@ -25,8 +25,10 @@ class Settings(BaseSettings):
 
     # ── Groq LLM ─────────────────────────────────────────────────────────────
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
-    groq_fast_model: str = "llama3-8b-8192"
+    groq_model: str = "groq/compound"
+    groq_fast_model: str = "groq/compound-mini"
+
+
 
     # ── Timeouts (seconds) ────────────────────────────────────────────────────
     request_timeout_seconds: float = 15.0

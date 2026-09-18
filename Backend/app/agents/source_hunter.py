@@ -81,7 +81,9 @@ class SourceHunterAgent:
         Fetch news articles live from all configured APIs.
         Ignores providers silently if their rate limit or quota is exceeded.
         """
+        from app.ingestion.providers.duckduckgo import DuckDuckGoProvider
         providers = [
+            DuckDuckGoProvider(),
             GNewsProvider(),
             NewsDataProvider(),
             MediastackProvider(),
@@ -91,6 +93,7 @@ class SourceHunterAgent:
             SpaceflightProvider(),
             NewsFlashProvider(),
         ]
+
 
         raw_articles: list[RawArticle] = []
         seen_urls: set[str] = set()
@@ -126,6 +129,7 @@ class SourceHunterAgent:
         Live ingest and normalize articles from seed_url or live news API search.
         """
         articles: list[Article] = []
+        derived_keywords: list[str] = list(keywords or [])
 
         # 1. Direct seed URL ingestion
         if seed_url and db:
@@ -133,11 +137,43 @@ class SourceHunterAgent:
                 ingested = await self.orchestrator.ingest_single_url(db, seed_url, event_id=event_id)
                 if ingested:
                     articles.append(ingested)
+
+                    # Update event title if event_id is given and title is generic
+                    if event_id:
+                        from app.db.repositories.event_repository import EventRepository
+                        event = await EventRepository.get_by_id(db, event_id)
+                        if event and (event.title.startswith("Event from") or event.title.startswith("Discovered Event")):
+                            if ingested.title and ingested.title != "Untitled Article":
+                                event.title = ingested.title
+                                await db.commit()
+
+                    # Extract search keywords from scraped article if none provided
+                    if not derived_keywords:
+                        stop_words = {
+                            "a", "an", "the", "and", "or", "but", "if", "because", "as", "until", "while",
+                            "of", "at", "by", "for", "with", "about", "against", "between", "into", "through",
+                            "during", "before", "after", "above", "below", "to", "from", "up", "down", "in",
+                            "out", "on", "off", "over", "under", "again", "further", "then", "once", "here",
+                            "there", "when", "where", "why", "how", "all", "any", "both", "each", "few",
+                            "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own",
+                            "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don",
+                            "should", "now", "says", "said", "new", "news", "event", "report", "reports"
+                        }
+                        entities = extract_named_entities(f"{ingested.title or ''} {ingested.content or ''}")
+                        title_terms = [
+                            w.strip('.,!"\'()[]{}') for w in (ingested.title or "").split()
+                            if w.lower().strip('.,!"\'()[]{}') not in stop_words and len(w) > 2
+                        ]
+                        for item in entities + title_terms:
+                            if item and item.lower() not in [k.lower() for k in derived_keywords]:
+                                derived_keywords.append(item)
+                                if len(derived_keywords) >= 6:
+                                    break
             except Exception as e:
                 logger.warning("seed_url_ingestion_failed", url=seed_url, error=str(e))
 
-        # 2. Live API query ingestion
-        query_terms = keywords or []
+        # 2. Live API query ingestion for same exact news story
+        query_terms = derived_keywords
         if query_terms and db:
             query_str = " ".join(query_terms[:5])
             raw_docs = await self.fetch_live_news(query_str, max_articles_per_provider=max_articles)
@@ -152,3 +188,4 @@ class SourceHunterAgent:
                     logger.warning("live_article_ingestion_failed", url=raw_doc.url, error=str(e))
 
         return articles
+

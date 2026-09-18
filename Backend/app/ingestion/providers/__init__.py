@@ -12,7 +12,10 @@ from app.ingestion.providers.rss import RSSProvider
 from app.ingestion.providers.spaceflight import SpaceflightProvider
 from app.ingestion.providers.thenewsapi import TheNewsAPIProvider
 
+from app.ingestion.providers.duckduckgo import DuckDuckGoProvider
+
 __all__ = [
+    "DuckDuckGoProvider",
     "CurrentsProvider",
     "GNewsProvider",
     "GuardianProvider",
@@ -24,3 +27,4 @@ __all__ = [
     "SpaceflightProvider",
     "TheNewsAPIProvider",
 ]
+

@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = "/api/v1";
 
 export interface Article {
   id: string;
@@ -80,6 +80,41 @@ export interface Correction {
   detected_at: string;
 }
 
+export interface DriftHighlight {
+  category: string;
+  source_language: string;
+  target_language: string;
+  original_text: string;
+  drifted_text: string;
+  explanation: string;
+  severity_level: string;
+}
+
+export interface CorrectionHighlight {
+  original_claim: string;
+  corrected_claim: string;
+  updated_articles_count: number;
+  outdated_articles_count: number;
+  details: string;
+}
+
+export interface ReportResponse {
+  id: string;
+  event_id: string;
+  headline: string;
+  summary: string;
+  accuracy_analysis?: string;
+  first_publisher?: string;
+  first_published_at?: string;
+  churn_analysis?: string;
+  key_drifts: DriftHighlight[];
+  correction_status?: CorrectionHighlight;
+  reader_takeaway: string;
+  confidence_score: number;
+  evidence_sources: any[];
+  created_at: string;
+}
+
 export const api = {
   async discoverEvent(topic: string, url?: string): Promise<EventResponse> {
     const payload: any = { max_articles: 10 };
@@ -134,6 +169,23 @@ export const api = {
     const res = await fetch(`${API_BASE}/news/top`);
     if (!res.ok) throw new Error("Failed to fetch top news");
     return res.json();
+  },
+
+  async triggerAnalysis(eventId: string): Promise<ReportResponse> {
+    const res = await fetch(`${API_BASE}/analysis/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event_id: eventId })
+    });
+    if (!res.ok) throw new Error("Failed to trigger analysis run");
+    return res.json();
+  },
+
+  async getReport(eventId: string): Promise<ReportResponse> {
+    const res = await fetch(`${API_BASE}/reports/event/${eventId}`);
+    if (!res.ok) throw new Error("Failed to fetch event report");
+    return res.json();
   }
 };
+
 

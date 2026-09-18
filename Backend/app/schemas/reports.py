@@ -34,9 +34,14 @@ class ReportResponse(BaseModel):
     event_id: str
     headline: str
     summary: str
+    accuracy_analysis: str | None = None
+    first_publisher: str | None = None
+    first_published_at: str | None = None
+    churn_analysis: str | None = None
     key_drifts: list[DriftHighlight] = Field(default_factory=list)
     correction_status: CorrectionHighlight | None = None
     reader_takeaway: str
     confidence_score: float = 0.9
     evidence_sources: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
+

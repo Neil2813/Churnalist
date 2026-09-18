@@ -140,14 +140,21 @@ Identified Corrections:
 
 Instructions:
 1. Write a clear, objective summary of the event's reporting lifecycle across sources and languages.
-2. Detail the key information drifts (e.g. numerical drift, attribution loss, severity changes) objectively without judging intent.
-3. Summarize correction status if applicable (which articles updated vs which remain outdated).
-4. Provide a clear key takeaway for readers.
+2. Provide an ACCURACY ANALYSIS explaining which news sources/articles are accurate and grounded in verified facts.
+3. Identify the FIRST PUBLISHER (the original source/outlet that broke the story first) and its publication timestamp if available.
+4. Provide a CHURN ANALYSIS identifying who churned the news (copied without independent verification), who altered/exaggerated facts, or who spread unverified/fake values.
+5. Detail key information drifts (e.g. numerical drift, attribution loss, severity changes).
+6. Summarize correction status if applicable.
+7. Provide a clear key takeaway for readers.
 
 Return strictly as JSON matching this structure:
 {{
   "headline": "...",
   "summary": "...",
+  "accuracy_analysis": "Detailed assessment of which news article/source is accurate and evidence-grounded.",
+  "first_publisher": "Name of original primary publisher/outlet",
+  "first_published_at": "Original publication date/time string",
+  "churn_analysis": "Breakdown of which outlets churned the news, altered claims, or spread unverified/fake values.",
   "key_drifts": [
     {{
       "category": "NUMERICAL_DRIFT",
@@ -170,3 +177,4 @@ Return strictly as JSON matching this structure:
   "confidence_score": 0.92
 }}
 """
+
