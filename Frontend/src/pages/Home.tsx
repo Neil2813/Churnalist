@@ -17,7 +17,7 @@ const SkeletonItem = ({ isMain = false }: { isMain?: boolean }) => (
         <div className="animate-pulse h-3 w-24" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
       </div>
     )}
-    
+
     {isMain ? (
       <>
         <div className="animate-pulse h-10 w-3/4 mx-auto mb-2" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
@@ -39,12 +39,12 @@ const SkeletonItem = ({ isMain = false }: { isMain?: boolean }) => (
       <>
         <div className="animate-pulse h-6 w-full mb-1" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
         <div className="animate-pulse h-6 w-3/4 mb-4" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
-        
+
         <div className="animate-pulse h-3 w-1/3 mb-3" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
         <div className="animate-pulse h-3 w-full mb-1" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
         <div className="animate-pulse h-3 w-5/6 mb-1" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
         <div className="animate-pulse h-3 w-4/5 mb-4" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.1 }} />
-        
+
         <div className="animate-pulse h-3 w-24" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.2 }} />
       </>
     )}
@@ -189,7 +189,7 @@ export default function Home() {
     try {
       const isUrl = query.startsWith('http');
       const ev = await api.discoverEvent(isUrl ? '' : query, isUrl ? query : undefined);
-      
+
       // Fetch full event details with articles in-place
       const evDetail = await api.getEvent(ev.id);
       setInvestigatedEvent(evDetail);
@@ -217,22 +217,22 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full pb-16">
-      
+
       {/* Hero Section */}
-      <section className="mb-4 w-full">
-        <div className="w-full" style={{ display: 'grid', gridTemplateColumns: '10% 80% 10%', padding: '2.5rem 2rem 1rem', alignItems: 'center' }}>
-          
+      <section className="mb-0 w-full">
+        <div className="w-full" style={{ display: 'grid', gridTemplateColumns: '14% 72% 14%', padding: '2.5rem 2rem 1rem', alignItems: 'center' }}>
+
           {/* Left Column */}
-          <div style={{ borderRight: '1px solid var(--color-border)', paddingRight: '2rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ borderRight: '1px solid var(--color-border)', paddingLeft: '1.5rem', paddingRight: '1.5rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <p className="font-display" style={{ fontStyle: 'italic', fontSize: '1.25rem', marginBottom: '1rem' }}>
               {t.heroQuote}
             </p>
             <span className="font-ui text-sm uppercase font-semibold text-muted">{t.heroAuthor}</span>
           </div>
-          
+
           {/* Center Column */}
           <div style={{ textAlign: 'center', padding: '0 3rem' }}>
-            <h2 className="font-display" style={{ fontSize: '3.5vw', margin: '0 auto', lineHeight: 1.1 }}>
+            <h2 className="font-display" style={{ fontSize: 'clamp(2.5rem, 3.5vw, 4.25rem)', margin: '0 auto', lineHeight: 1.08 }}>
               {t.heroHeadline}
             </h2>
 
@@ -242,29 +242,25 @@ export default function Home() {
               </div>
             )}
           </div>
-          
+
           {/* Right Column */}
-          <div style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: '2rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: '0.75rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <p className="font-mono text-muted uppercase" style={{ fontSize: '0.8rem', lineHeight: '1.5', letterSpacing: '0.1em' }}>
               {t.heroSide}
             </p>
-            <div style={{ width: '20px', height: '2px', backgroundColor: 'var(--color-ink)', marginTop: '1rem' }}></div>
           </div>
         </div>
 
-        {/* Double border bottom */}
-        <div style={{ borderBottom: '2px solid var(--color-ink)', width: '100%' }}></div>
-        <div style={{ borderBottom: '1px solid var(--color-ink)', width: '100%', marginTop: '4px' }}></div>
+        <div style={{ borderBottom: '1px solid var(--color-ink)', width: '100%' }}></div>
       </section>
 
       {/* URL Input Section */}
       <section className="mb-8 w-full">
-        {/* Double border top */}
         <div style={{ borderTop: '2px solid var(--color-ink)', width: '100%', marginBottom: '4px' }}></div>
         <div style={{ borderTop: '1px solid var(--color-ink)', width: '100%' }}></div>
-        
+
         <div style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
-          
+
           {/* Left: Mascot & Headline */}
           <div className="flex items-center gap-4 flex-shrink-0">
             <img src="/Investigate.png" alt="Investigate Mascot" style={{ height: '60px', width: 'auto', objectFit: 'contain' }} />
@@ -273,10 +269,10 @@ export default function Home() {
               <h2 className="font-display m-0" style={{ fontSize: '1.75rem', lineHeight: '1' }}>{t.tagline}</h2>
             </div>
           </div>
-          
+
           {/* Middle: Italic Text */}
           <div className="flex-shrink-0" style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: '2rem', height: '40px', display: 'flex', alignItems: 'center' }}>
-            <span className="font-display text-muted" style={{ fontStyle: 'italic', fontSize: '1.1rem' }}>{t.heroQuote}</span>
+            <span className="font-display text-muted" style={{ fontStyle: 'italic', fontSize: '1.1rem' }}>See how the same story<br />changes across sources.</span>
           </div>
 
           {/* Right: Search Box */}
@@ -284,9 +280,9 @@ export default function Home() {
             <form onSubmit={handleTrace} className="search-container flex items-center" style={{ margin: 0, width: '100%', boxShadow: 'none', borderRadius: 0, padding: 0, height: '45px', border: '1px solid var(--color-border)' }}>
               <div className="search-input-wrapper flex-1 flex items-center" style={{ paddingLeft: '1rem', borderRight: 'none', height: '100%' }}>
                 <LinkIcon size={16} className="text-muted mr-2" />
-                <input 
-                  type="text" 
-                  placeholder={t.searchPlaceholder} 
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   disabled={loading}
@@ -301,13 +297,12 @@ export default function Home() {
 
         </div>
 
-        {/* Double border bottom */}
         <div style={{ borderBottom: '1px solid var(--color-ink)', width: '100%', marginBottom: '4px' }}></div>
         <div style={{ borderBottom: '2px solid var(--color-ink)', width: '100%' }}></div>
       </section>
 
       {/* 3-Column Newspaper Layout Grid (Default vs Searched URL result) */}
-      <section className="mb-12 w-full min-h-[400px]">
+      {isInvestigating && <section className="mb-12 w-full min-h-[400px]">
         {showLoadingState ? (
           <div className="newspaper-layout" style={{ padding: '2rem' }}>
             <div className="newspaper-col-left">
@@ -324,7 +319,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="newspaper-layout" style={{ padding: '2rem' }}>
-            
+
             {/* Left Column */}
             <div className="newspaper-col-left">
               {displayArticles.slice(1, 4).map(article => {
@@ -345,7 +340,7 @@ export default function Home() {
                       <span className="date">{article.date}</span>
                       {isSidebarTranslating && (
                         <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse">
-                          <Loader2 size={10} className="animate-spin" /> TRANSLATING...
+                          <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
                         </span>
                       )}
                     </div>
@@ -509,7 +504,7 @@ export default function Home() {
                           <span className="date">{article.date}</span>
                           {isSidebarTranslating && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse ml-2">
-                              <Loader2 size={10} className="animate-spin" /> TRANSLATING...
+                              <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
                             </span>
                           )}
                         </div>
@@ -564,7 +559,7 @@ export default function Home() {
 
           </div>
         )}
-      </section>
+      </section>}
 
       {/* Groq AI Detailed Analysis Section (Rendered when URL search is performed) */}
       {isInvestigating && (
@@ -603,7 +598,7 @@ export default function Home() {
 
               {/* 4 Deep Insights Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* 1. Accuracy & Truth Assessment */}
                 <div className="border-all p-5 bg-white shadow-sm" style={{ borderLeft: '5px solid #10b981' }}>
                   <div className="flex items-center gap-2 text-emerald-700 font-mono font-bold text-xs uppercase mb-3">

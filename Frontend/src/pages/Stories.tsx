@@ -12,6 +12,7 @@ export default function Stories() {
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [liveNews, setLiveNews] = useState<any[]>(newsArticles);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -29,7 +30,15 @@ export default function Stories() {
       try {
         const news = await api.getTopNews();
         if (news && news.length > 0) {
-          setLiveNews(news);
+          const normalizedNews = news.map((article: any) => ({
+            ...article,
+            category: article.category === 'ECONOMY' ? 'BUSINESS' : article.category,
+          }));
+          // The live source may not contain every desk on a given refresh.
+          // Retain a story for any missing desk so both side feeds stay complete.
+          const liveCategories = new Set(normalizedNews.map((article: any) => article.category));
+          const deskFallbacks = newsArticles.filter((article) => !liveCategories.has(article.category));
+          setLiveNews([...normalizedNews, ...deskFallbacks]);
         }
       } catch (err) {
         console.warn("Failed to fetch live news, falling back to hardcoded data", err);
@@ -40,39 +49,64 @@ export default function Stories() {
     fetchNews();
   }, []);
 
+  // Keep the central lead story fresh, like a news gallery, while preserving
+  // the feed order returned by the API (newest item first).
+  useEffect(() => {
+    setFeaturedIndex(0);
+    if (liveNews.length < 2) return;
+
+    const rotation = window.setInterval(() => {
+      setFeaturedIndex((current) => (current + 1) % liveNews.length);
+    }, 7000);
+
+    return () => window.clearInterval(rotation);
+  }, [liveNews]);
+
   return (
     <div className="flex flex-col w-full">
       {/* Latest News Section */}
       <section className="mb-12 w-full">
-        <div className="section-header" style={{ padding: '1rem 2rem' }}>
-          <h2 className="font-display">LATEST NEWS <span className="font-mono text-muted" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>REAL STORIES. MULTIPLE PERSPECTIVES.</span></h2>
-          <div className="filters font-mono">
-            {['ALL', 'WORLD', 'INDIA', 'TECH'].map(cat => (
-              <span key={cat} onClick={() => setActiveFilter(cat)} className={`cursor-pointer ${activeFilter === cat ? 'filter-active' : 'hover:text-blue'}`}>{cat}</span>
-            ))}
-            <span className="text-muted">|</span>
-            {['BUSINESS', 'SCIENCE', 'POLITICS', 'ENVIRONMENT'].map(cat => (
-              <span key={cat} onClick={() => setActiveFilter(cat)} className={`cursor-pointer ${activeFilter === cat ? 'filter-active' : 'hover:text-blue'}`}>{cat}</span>
+        {/* Category navigation */}
+        <div style={{ borderBottom: '1px solid var(--color-ink)', padding: '0.65rem 2rem', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', background: 'transparent' }}>
+          <div className="filters font-mono flex items-center justify-center flex-wrap gap-2 text-xs">
+            {['ALL', 'WORLD', 'INDIA', 'TECH', 'BUSINESS', 'SCIENCE', 'POLITICS', 'ENVIRONMENT'].map((category, index, categories) => (
+              <span key={category} className="flex items-center gap-2">
+                <span
+                  onClick={() => {
+                    setActiveFilter(category);
+                    setFeaturedIndex(0);
+                  }}
+                  className={`cursor-pointer transition-colors ${activeFilter === category ? 'filter-active' : 'hover:text-blue'}`}
+                >
+                  {category}
+                </span>
+                {index < categories.length - 1 && <span className="text-muted" style={{ opacity: 0.4, userSelect: 'none' }}>|</span>}
+              </span>
             ))}
           </div>
         </div>
-
         {(() => {
-          const filtered = liveNews.filter(a => activeFilter === 'ALL' || a.category === activeFilter);
-          
-          const center = [];
-          const left = [];
-          const right = [];
-          
-          if (filtered.length > 0) center.push(filtered[0]);
-          if (filtered.length > 1) left.push(filtered[1]);
-          if (filtered.length > 2) left.push(filtered[2]);
-          if (filtered.length > 3) left.push(filtered[3]);
-          if (filtered.length > 4) center.push(filtered[4]);
-          
-          for (let i = 5; i < filtered.length; i++) {
-            right.push(filtered[i]);
-          }
+          const leftCategories = ['WORLD', 'INDIA', 'TECH', 'BUSINESS'];
+          const rightCategories = ['SCIENCE', 'POLITICS', 'ENVIRONMENT'];
+          const isAllStories = activeFilter === 'ALL';
+          const visibleNews = isAllStories
+            ? liveNews
+            : liveNews.filter((article) => article.category === activeFilter);
+          const featured = visibleNews.length ? visibleNews[featuredIndex % visibleNews.length] : null;
+          const storiesForDesks = (categories: string[]) => categories.flatMap((category) =>
+            liveNews.filter((article) => article.category === category).slice(0, 1)
+          );
+          // All shows the curated desk layout. A selected category shows only
+          // stories from that category, distributed across the same columns.
+          const center = isAllStories
+            ? (featured ? [featured] : [])
+            : visibleNews.slice(0, 1);
+          const left = isAllStories
+            ? storiesForDesks(leftCategories)
+            : visibleNews.slice(1, 4);
+          const right = isAllStories
+            ? storiesForDesks(rightCategories)
+            : visibleNews.slice(4);
 
           return (
             <div className="newspaper-layout" style={{ padding: '2rem' }}>
@@ -96,18 +130,29 @@ export default function Stories() {
                       </div>
                     )}
                     <div className="mt-2 font-mono text-xs font-bold text-blue opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      TRACE &rarr;
+                      SEE CHANGES &rarr;
                     </div>
                   </Link>
                 ))}
               </div>
               <div className="newspaper-col-center">
+                {/* Centered LATEST NEWS Headline */}
+                <div style={{ textAlign: 'center', width: '100%', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <h1 className="font-display text-center" style={{ margin: 0, fontSize: '2.5rem', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'center', width: '100%' }}>
+                    LATEST NEWS
+                  </h1>
+                  <span className="font-mono text-muted uppercase text-center" style={{ fontSize: '0.65rem', letterSpacing: '0.15em', marginTop: '0.35rem', textAlign: 'center', display: 'block', width: '100%' }}>
+                    REAL STORIES. MULTIPLE PERSPECTIVES.
+                  </span>
+                  <div aria-hidden="true" style={{ borderBottom: '1px solid #D8D5CC', width: '100%', marginTop: '0.75rem' }} />
+                </div>
+
                 {center.map((article, i) => (
-                  <div key={article.id} className={`newspaper-article ${i===0 && activeFilter==='ALL' ? 'main-story' : ''} border-0 pb-0`}>
-                    {i === 0 && activeFilter === 'ALL' ? (
+                  <div key={article.id} className="newspaper-article main-story border-0 pb-0">
+                    {i === 0 ? (
                       <>
                         <div className="news-meta justify-center mb-4">
-                          <span>{article.category}</span>
+                          <span>{isAllStories ? 'ALL' : activeFilter}</span>
                           <span className="text-muted">·</span>
                           <span className="date">{article.date}</span>
                         </div>
@@ -129,7 +174,7 @@ export default function Stories() {
                         </div>
                         <div className="flex justify-center mb-8 group">
                           <Link to={article.link} className="font-bold font-mono text-blue transition-transform hover:translate-x-1 relative inline-block text-sm tracking-wider uppercase">
-                            TRACE THIS STORY &rarr;
+                            SEE WHAT CHANGED &rarr;
                             <span className="absolute left-0 bottom-[-2px] w-full h-[1px] bg-blue scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
                           </Link>
                         </div>
@@ -149,7 +194,7 @@ export default function Stories() {
                           <div style={{ color: 'var(--color-ink)' }}>{article.excerpt}</div>
                         </div>
                         <div className="font-mono text-xs font-bold text-blue opacity-0 group-hover:opacity-100 transition-opacity flex justify-center items-center gap-1">
-                          TRACE &rarr;
+                          SEE CHANGES &rarr;
                         </div>
                       </Link>
                     )}
@@ -177,7 +222,7 @@ export default function Stories() {
                       </div>
                     )}
                     <div className="mt-2 font-mono text-xs font-bold text-blue opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                      TRACE &rarr;
+                      SEE CHANGES &rarr;
                     </div>
                   </Link>
                 ))}
@@ -187,10 +232,15 @@ export default function Stories() {
         })()}
       </section>
 
-      {/* Tracked Events Section (Same as before) */}
+      {/* Tracked Events Section */}
       <section className="mb-12 w-full">
-        <div className="section-header" style={{ padding: '1rem 2rem' }}>
-          <h2 className="font-display">TRACKED EVENTS <span className="font-mono text-muted" style={{ fontSize: '0.65rem', letterSpacing: '0.1em' }}>OUR ONGOING INVESTIGATIONS.</span></h2>
+        <div style={{ padding: '2.5rem 2rem 1.75rem', textAlign: 'center', borderBottom: '1px solid var(--color-ink)' }}>
+          <h2 className="font-display" style={{ margin: 0, fontSize: '3.2rem', lineHeight: 1, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            TRACKED EVENTS
+          </h2>
+          <span className="font-mono text-muted uppercase inline-block" style={{ fontSize: '0.75rem', letterSpacing: '0.15em', marginTop: '0.6rem' }}>
+            OUR ONGOING INVESTIGATIONS.
+          </span>
         </div>
         <div style={{ padding: '2rem' }}>
           {loading ? (

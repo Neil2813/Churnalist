@@ -142,6 +142,10 @@ export default function Investigation() {
 
   if (!eventData) return null;
 
+  const languageCount = new Set(eventData.articles.map((article) => article.language).filter(Boolean)).size;
+  const sourceCount = new Set(eventData.articles.map((article) => article.source_name).filter(Boolean)).size;
+  const claimChangeCount = driftData?.edges?.length ?? 0;
+
   return (
     <div className="fade-in mt-4 pb-16">
       {/* Navigation Header */}
@@ -161,6 +165,17 @@ export default function Investigation() {
         </span>
         <h2 className="font-display inline align-middle text-2xl md:text-3xl">{eventData.title}</h2>
         <p className="text-muted mt-2 font-mono text-sm">Discovered {eventData.article_count} related articles across global news sources.</p>
+        <div className="font-mono text-xs uppercase flex flex-wrap gap-x-3 gap-y-1 mt-3 text-ink" style={{ letterSpacing: '0.06em' }}>
+          <span>{eventData.article_count} articles</span>
+          <span className="text-muted">·</span>
+          <span>{languageCount} languages</span>
+          <span className="text-muted">·</span>
+          <span>{sourceCount} sources</span>
+          <span className="text-muted">·</span>
+          <span>{claimChangeCount} claim changes</span>
+          <span className="text-muted">·</span>
+          <span>{corrections.length} corrections</span>
+        </div>
         <hr className="editorial-rule mt-4" />
       </div>
 
