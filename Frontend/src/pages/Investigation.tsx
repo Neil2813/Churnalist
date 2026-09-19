@@ -3,10 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Loader2, FileText, Globe, AlertTriangle, ArrowLeft, 
   Sparkles, Cpu, CheckCircle2, Clock, GitCompare, Flame, 
-  ShieldCheck, ExternalLink 
+  ShieldCheck, ExternalLink, Languages 
 } from 'lucide-react';
 import { api } from '../api';
-import type { EventDetailResponse, DriftReport, Correction, ReportResponse } from '../api';
+import type { EventDetailResponse, DriftReport, Correction, ReportResponse, ArticleTranslationResponse } from '../api';
+
+const SUPPORTED_TRANSLATION_LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'Hindi (हिन्दी)' },
+  { code: 'ta', name: 'Tamil (தமிழ்)' },
+  { code: 'te', name: 'Telugu (తెలుగు)' },
+  { code: 'bn', name: 'Bengali (বাংলা)' },
+  { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
+];
 
 export default function Investigation() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -18,6 +27,34 @@ export default function Investigation() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Full article translation states
+  const [articleTranslations, setArticleTranslations] = useState<Record<string, ArticleTranslationResponse>>({});
+  const [translatingArticles, setTranslatingArticles] = useState<Record<string, boolean>>({});
+  const [translationErrors, setTranslationErrors] = useState<Record<string, string | null>>({});
+  const [showOriginalMap, setShowOriginalMap] = useState<Record<string, boolean>>({});
+  const [targetLangMap, setTargetLangMap] = useState<Record<string, string>>({});
+  const [expandedReaderMap, setExpandedReaderMap] = useState<Record<string, boolean>>({});
+
+  const handleTranslateArticle = async (articleId: string, targetLang?: string) => {
+    const lang = targetLang || targetLangMap[articleId] || 'en';
+    setTranslatingArticles(prev => ({ ...prev, [articleId]: true }));
+    setTranslationErrors(prev => ({ ...prev, [articleId]: null }));
+    try {
+      const trans = await api.translateArticle(articleId, lang);
+      setArticleTranslations(prev => ({ ...prev, [articleId]: trans }));
+      setExpandedReaderMap(prev => ({ ...prev, [articleId]: true }));
+      setShowOriginalMap(prev => ({ ...prev, [articleId]: false }));
+    } catch (err: any) {
+      console.error("Failed to translate article:", err);
+      setTranslationErrors(prev => ({
+        ...prev,
+        [articleId]: err?.message || 'Translation failed, please try again',
+      }));
+    } finally {
+      setTranslatingArticles(prev => ({ ...prev, [articleId]: false }));
+    }
+  };
+
   // Use ref to track active polling and prevent duplicates in strict mode
   const isPolling = useRef(false);
 
@@ -136,23 +173,118 @@ export default function Investigation() {
             <span className="font-mono text-xs font-normal text-muted">{eventData.articles.length} SOURCES</span>
           </h3>
           <div className="flex flex-col gap-4">
-            {eventData.articles.map(article => (
-              <div key={article.id} className="border-all p-4 bg-white hover:border-ink transition-colors shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-mono text-xs font-bold text-ink uppercase">{article.source_name || "News Outlet"}</span>
-                  <span className="font-mono bg-ink text-paper px-1.5 py-0.5 text-[10px] uppercase font-semibold">{article.language}</span>
+            {eventData.articles.map(article => {
+              const trans = articleTranslations[article.id];
+              const isTranslating = Boolean(translatingArticles[article.id]);
+              const showOriginal = Boolean(showOriginalMap[article.id]);
+              const isExpanded = Boolean(expandedReaderMap[article.id]);
+              const targetLang = targetLangMap[article.id] || 'en';
+
+              const activeTitle = (trans && !showOriginal) ? (trans.translated_title || article.title) : article.title;
+              const activeContent = (trans && !showOriginal) ? trans.translated_content : (trans ? (trans.original_content || article.content) : article.content);
+
+              return (
+                <div key={article.id} className="border-all p-4 bg-white hover:border-ink transition-colors shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-mono text-xs font-bold text-ink uppercase">{article.source_name || "News Outlet"}</span>
+                    <span className="font-mono bg-ink text-paper px-1.5 py-0.5 text-[10px] uppercase font-semibold">
+                      {trans && !showOriginal ? `${trans.original_language?.toUpperCase()} → ${trans.target_language.toUpperCase()}` : (article.language || "EN")}
+                    </span>
+                  </div>
+                  <h4 className="font-display text-md mb-2 leading-snug">{activeTitle}</h4>
+                  {article.published_at && (
+                    <span className="font-mono text-[11px] text-muted block mb-3">
+                      Published: {new Date(article.published_at).toLocaleString()}
+                    </span>
+                  )}
+
+                  {/* Translation & Reading Controls */}
+                  <div className="pt-2 border-top mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <select
+                        value={targetLang}
+                        onChange={(e) => {
+                          const newLang = e.target.value;
+                          setTargetLangMap(prev => ({ ...prev, [article.id]: newLang }));
+                          handleTranslateArticle(article.id, newLang);
+                        }}
+                        disabled={isTranslating}
+                        className="font-mono text-xs border border-ink bg-white px-2 py-1 cursor-pointer outline-none font-semibold"
+                      >
+                        {SUPPORTED_TRANSLATION_LANGUAGES.map(l => (
+                          <option key={l.code} value={l.code}>{l.name}</option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTranslateArticle(article.id, targetLang)}
+                        disabled={isTranslating}
+                        className="font-mono text-xs px-2.5 py-1 uppercase font-bold flex items-center gap-1"
+                      >
+                        {isTranslating ? <Loader2 size={10} className="animate-spin" /> : <Languages size={12} />}
+                        {isTranslating ? 'Translating...' : (trans ? 'Translate' : 'Translate Article')}
+                      </button>
+
+                      {trans && (
+                        <button
+                          type="button"
+                          onClick={() => setShowOriginalMap(prev => ({ ...prev, [article.id]: !prev[article.id] }))}
+                          className="outline font-mono text-xs px-2.5 py-1 uppercase font-bold"
+                          style={{ border: '1px solid var(--color-ink)' }}
+                        >
+                          {showOriginal ? 'Show Translation' : 'View Original'}
+                        </button>
+                      )}
+                    </div>
+
+                    <a href={article.url} target="_blank" rel="noreferrer" className="text-xs font-mono font-bold text-blue hover:underline inline-flex items-center gap-1">
+                      <Globe size={12} /> ORIGINAL SOURCE <ExternalLink size={10} />
+                    </a>
+                  </div>
+
+                  {translationErrors[article.id] && (
+                    <div className="mt-2 text-alert font-mono text-xs">
+                      <strong>Translation Error:</strong> {translationErrors[article.id]}
+                    </div>
+                  )}
+
+                  {/* Expanded Translation / Article Reader */}
+                  {isExpanded && trans && (
+                    <div className="mt-4 pt-3 border-top bg-paper p-3 border-all">
+                      <div className="flex items-center justify-between text-xs font-mono text-muted mb-3">
+                        <span>
+                          {!showOriginal ? (
+                            <>
+                              Translated from <strong className="text-ink uppercase">{trans.original_language_name || trans.original_language}</strong> into <strong className="text-blue uppercase">{trans.target_language_name}</strong>
+                            </>
+                          ) : (
+                            <>
+                              Viewing <strong className="text-ink uppercase">Original ({trans.original_language_name || trans.original_language})</strong> text
+                            </>
+                          )}
+                        </span>
+                        {trans.cached && (
+                          <span className="bg-ink text-paper px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                            From Cache
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="font-ui text-sm space-y-3 max-h-96 overflow-y-auto pr-1">
+                        {activeContent ? (
+                          activeContent.split(/\n\s*\n/).filter(Boolean).map((p: string, pIdx: number) => (
+                            <p key={pIdx} className="mb-2 leading-relaxed text-ink">{p.trim()}</p>
+                          ))
+                        ) : (
+                          <p className="text-muted italic">Full article content not available.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <h4 className="font-display text-md mb-2 leading-snug">{article.title}</h4>
-                {article.published_at && (
-                  <span className="font-mono text-[11px] text-muted block mb-3">
-                    Published: {new Date(article.published_at).toLocaleString()}
-                  </span>
-                )}
-                <a href={article.url} target="_blank" rel="noreferrer" className="text-xs font-mono font-bold text-blue hover:underline inline-flex items-center gap-1">
-                  <Globe size={12} /> READ ORIGINAL ARTICLE <ExternalLink size={10} />
-                </a>
-              </div>
-            ))}
+              );
+            })}
             {eventData.articles.length === 0 && (
               <p className="text-muted italic text-sm p-4 border-all bg-paper">No articles ingested yet. Still fetching live data...</p>
             )}
@@ -182,12 +314,26 @@ export default function Investigation() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="border-right pr-4">
-                        <span className="text-xs text-muted font-mono block mb-1">ORIGINAL CLAIM</span>
-                        <p className="font-display text-md">"{sourceNode.label}"</p>
+                        <span className="text-xs text-muted font-mono block mb-1">ORIGINAL CLAIM ({sourceNode.language ? sourceNode.language.toUpperCase() : 'EN'})</span>
+                        <p className="font-display text-md">
+                          "{sourceNode.english_translation || sourceNode.label}"
+                        </p>
+                        {sourceNode.original_text && sourceNode.original_text !== (sourceNode.english_translation || sourceNode.label) && (
+                          <p className="font-ui text-xs text-muted mt-1 italic">
+                            Native script: "{sourceNode.original_text}"
+                          </p>
+                        )}
                       </div>
                       <div>
-                        <span className="text-xs text-muted font-mono block mb-1">MODIFIED CLAIM ({targetNode.language || '?'})</span>
-                        <p className="font-display text-md text-alert">"{targetNode.label}"</p>
+                        <span className="text-xs text-muted font-mono block mb-1">MODIFIED CLAIM ({targetNode.language ? targetNode.language.toUpperCase() : '?'})</span>
+                        <p className="font-display text-md text-alert">
+                          "{targetNode.original_text || targetNode.label}"
+                        </p>
+                        {targetNode.english_translation && targetNode.english_translation !== (targetNode.original_text || targetNode.label) && (
+                          <p className="font-ui text-xs text-muted mt-1 italic">
+                            English translation: "{targetNode.english_translation}"
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -28,8 +28,8 @@ logger = get_logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
-MAX_RETRIES = 3
-RETRY_DELAYS = [0.5, 1.0, 2.0, 4.0]
+MAX_RETRIES = 4
+RETRY_DELAYS = [1.0, 2.0, 4.0, 8.0]
 
 
 class GroqClient:
@@ -96,13 +96,24 @@ class GroqClient:
                     )
 
                 # Level 2: JSON validation
+                clean_raw = raw.strip()
+                first_brace = clean_raw.find("{")
+                last_brace = clean_raw.rfind("}")
+                if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                    json_candidate = clean_raw[first_brace:last_brace + 1]
+                else:
+                    json_candidate = clean_raw
+
                 try:
-                    parsed_dict = json.loads(raw)
-                except json.JSONDecodeError as e:
-                    raise LLMInvalidResponseError(
-                        f"LLM returned non-JSON content: {e}",
-                        details={"raw_response": raw[:500]},
-                    )
+                    parsed_dict = json.loads(json_candidate)
+                except json.JSONDecodeError:
+                    try:
+                        parsed_dict = json.loads(clean_raw)
+                    except json.JSONDecodeError as e:
+                        raise LLMInvalidResponseError(
+                            f"LLM returned non-JSON content: {e}",
+                            details={"raw_response": raw[:500]},
+                        )
 
                 # Level 3: Schema validation
                 try:
@@ -133,6 +144,13 @@ class GroqClient:
             except Exception as e:
                 err_str = str(e).lower()
                 if "rate" in err_str or "429" in err_str:
+                    if attempt < MAX_RETRIES - 1:
+                        import re
+                        match = re.search(r"try again in (\d+(?:\.\d+)?)s", str(e), re.IGNORECASE)
+                        wait_sec = float(match.group(1)) + 0.5 if match else (2.0 * (attempt + 1))
+                        logger.warning("llm_rate_limit_retry", attempt=attempt + 1, wait_sec=wait_sec, error=str(e))
+                        await asyncio.sleep(wait_sec)
+                        continue
                     raise LLMQuotaExceededError(f"Groq rate limit exceeded: {e}")
                 if "timeout" in err_str or "timed out" in err_str:
                     raise LLMTimeoutError(f"Groq call timed out: {e}")

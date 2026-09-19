@@ -92,6 +92,13 @@ class AnalysisService:
                     object_value=c["object_value"],
                     object_unit=c.get("object_unit"),
                     raw_text=c["raw_text"],
+                    original_language=c.get("original_language"),
+                    original_text=c.get("original_text"),
+                    english_translation=c.get("english_translation"),
+                    extracted_value=str(c.get("extracted_value")) if c.get("extracted_value") is not None else None,
+                    attribution=c.get("attribution"),
+                    certainty=c.get("certainty"),
+                    severity=c.get("severity"),
                     source_start_offset=c.get("source_start_offset"),
                     source_end_offset=c.get("source_end_offset"),
                 )

@@ -4,12 +4,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Query, status
 
 from app.api.deps import DBSession
-from app.schemas.articles import ArticleDetailResponse, ArticleResponse
+from app.schemas.articles import ArticleDetailResponse, ArticleResponse, ArticleTranslationResponse
 from app.schemas.ingestion import IngestRssRequest, IngestionJobResponse, IngestUrlRequest
 from app.services.article_service import ArticleService
+from app.services.translation_service import TranslationService
 
 router = APIRouter(prefix="/articles", tags=["Articles"])
 service = ArticleService()
+translation_service = TranslationService()
 
 
 @router.post(
@@ -79,3 +81,26 @@ async def get_article_detail(
     """Get full content, metadata, and version snapshots for an article."""
     article = await service.get_article(db, article_id)
     return ArticleDetailResponse.model_validate(article)
+
+
+@router.get(
+    "/{article_id}/translate",
+    response_model=ArticleTranslationResponse,
+    summary="Translate full article content into a target language",
+)
+async def translate_article(
+    article_id: str,
+    db: DBSession,
+    lang: str = Query(default="en", description="Target ISO language code, e.g. en, hi, ta, te, bn"),
+    title_only: bool = Query(default=False, description="Translate only the headline for lightweight sidebar card rendering"),
+) -> ArticleTranslationResponse:
+    """
+    Translate full news article title and content into the requested target language.
+    Checks the database cache table first; calls the LLM if not cached, then stores and returns the result.
+    """
+    return await translation_service.get_or_translate_article(
+        db=db,
+        article_id=article_id,
+        target_language=lang,
+        title_only=title_only,
+    )

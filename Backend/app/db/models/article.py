@@ -82,6 +82,9 @@ class Article(Base, UUIDMixin, TimestampMixin):
     versions: Mapped[list["ArticleVersion"]] = relationship(
         "ArticleVersion", back_populates="article", lazy="select"
     )
+    translations: Mapped[list["ArticleTranslation"]] = relationship(
+        "ArticleTranslation", back_populates="article", lazy="select", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Article id={self.id!r} lang={self.language!r} title={self.title!r:.40}>"
@@ -113,4 +116,33 @@ class ArticleVersion(Base, UUIDMixin):
         return (
             f"<ArticleVersion article_id={self.article_id!r} "
             f"v={self.version_number} hash={self.content_hash[:8]!r}>"
+        )
+
+
+class ArticleTranslation(Base, UUIDMixin, TimestampMixin):
+    """
+    Cached full-article translation.
+
+    Keyed by article_id + target_language to avoid re-translating
+    the same article and language pair on repeated read requests.
+    """
+    __tablename__ = "article_translations"
+    __table_args__ = (
+        UniqueConstraint("article_id", "target_language", name="uq_article_translations_article_lang"),
+    )
+
+    article_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("articles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_language: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    translated_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    translated_content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Relationship
+    article: Mapped["Article"] = relationship("Article", back_populates="translations")
+
+    def __repr__(self) -> str:
+        return (
+            f"<ArticleTranslation article_id={self.article_id!r} "
+            f"lang={self.target_language!r}>"
         )

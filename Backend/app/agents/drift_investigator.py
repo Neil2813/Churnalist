@@ -12,6 +12,8 @@ import json
 from typing import Any
 from pydantic import BaseModel, Field
 
+from app.analysis.drift import classify_claim_relation
+from app.analysis.language import detect_correction_language_signal
 from app.analysis.numbers import check_numerical_drift
 from app.analysis.source_overlap import analyze_source_overlap
 from app.core.constants import RelationType, CorrectionType
@@ -64,40 +66,24 @@ class DriftInvestigatorAgent:
             )
             return [rel.model_dump() for rel in res.relations]
 
-        # Deterministic fallback comparison matching subject/predicate
+        # Deterministic fallback comparison matching subject/predicate using rewired drift heuristics
         relations = []
         for s_claim in source_claims:
             s_subj = (s_claim.get("subject") or "").lower()
             s_pred = (s_claim.get("predicate") or "").lower()
-            s_val = s_claim.get("object_value")
 
             for t_claim in target_claims:
                 t_subj = (t_claim.get("subject") or "").lower()
                 t_pred = (t_claim.get("predicate") or "").lower()
-                t_val = t_claim.get("object_value")
 
                 if s_subj == t_subj and s_pred == t_pred:
-                    # Check numerical drift if both values are present
-                    num_res = check_numerical_drift(s_val, t_val)
-                    if num_res["has_drift"]:
-                        rel_type = RelationType.NUMERICAL_DRIFT
-                        reason = f"Numerical value drifted from {s_val} to {t_val}."
-                    elif s_claim.get("attribution") and not t_claim.get("attribution"):
-                        rel_type = RelationType.ATTRIBUTION_LOSS
-                        reason = f"Attribution '{s_claim.get('attribution')}' was dropped."
-                    elif s_val == t_val:
-                        rel_type = RelationType.SAME
-                        reason = "Claims match in value and meaning."
-                    else:
-                        rel_type = RelationType.MODIFIED
-                        reason = f"Claim value modified from '{s_val}' to '{t_val}'."
-
+                    rel_result = classify_claim_relation(s_claim, t_claim)
                     relations.append({
                         "source_claim_id": s_claim.get("id", ""),
                         "target_claim_id": t_claim.get("id", ""),
-                        "relation_type": rel_type,
-                        "confidence": 0.90,
-                        "reason": reason,
+                        "relation_type": rel_result["relation_type"],
+                        "confidence": rel_result.get("confidence", 0.90),
+                        "reason": rel_result.get("reason", "Claims aligned."),
                     })
 
         return relations
@@ -112,8 +98,11 @@ class DriftInvestigatorAgent:
         corrections = []
         # Check articles with correction titles/content
         for art in articles:
-            content_lower = (art.get("content") or "").lower()
-            if "correction:" in content_lower or "updated:" in content_lower:
+            content = art.get("content") or ""
+            title = art.get("title") or ""
+            lang = art.get("language")
+            full_text = f"{title} {content}"
+            if detect_correction_language_signal(full_text, lang=lang):
                 corrections.append({
                     "event_id": event_id,
                     "article_id": art.get("id"),

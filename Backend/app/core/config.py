@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     newsflash_api_key: str = Field("", validation_alias=AliasChoices("newsflash_api_key", "news_flash", "newsflash"))
 
     @field_validator(
+        "groq_api_key",
         "gnews_api_key",
         "newsdata_api_key",
         "mediastack_api_key",

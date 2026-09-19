@@ -96,7 +96,27 @@ def detect_correction_language_signal(text: str, lang: str | None = None) -> boo
 
     # Hindi Unicode signals (सुधार = correction, संशोधन = amendment)
     hindi_signals = ["सुधार", "संशोधन", "अपडेट"]
-    if lang == "hi" and any(sig in text for sig in hindi_signals):
+    if (lang == "hi" or lang is None) and any(sig in text for sig in hindi_signals):
+        return True
+
+    # Tamil Unicode signals (திருத்தம் = correction, புதுப்பிப்பு = update, புதுப்பிக்கப்பட்டது = updated, விளக்கம் = clarification)
+    tamil_signals = ["திருத்தம்", "புதுப்பிப்பு", "புதுப்பிக்கப்பட்டது", "விளக்கம்", "பிழைதிருத்தம்"]
+    if (lang == "ta" or lang is None) and any(sig in text for sig in tamil_signals):
+        return True
+
+    # Telugu Unicode signals (సవరణ = correction/amendment, నవీకరణ = update, నవీకరించబడింది = updated, స్పష్టీకరణ = clarification)
+    telugu_signals = ["సవరణ", "నవీకరణ", "నవీకరించబడింది", "స్పష్టీకరణ", "దిద్దుబాటు"]
+    if (lang == "te" or lang is None) and any(sig in text for sig in telugu_signals):
+        return True
+
+    # Bengali Unicode signals (সংশোধন = correction/amendment, আপডেট = update, সংশোধিত = corrected, স্পষ্টীকরণ = clarification)
+    bengali_signals = ["সংশোধন", "আপডেট", "সংশোধিত", "স্পষ্টীকরণ", "ভুল সংশোধন"]
+    if (lang == "bn" or lang is None) and any(sig in text for sig in bengali_signals):
+        return True
+
+    # Kannada Unicode signals (ತಿದ್ದುಪಡಿ = correction/amendment, ಸರಿಪಡಿಸಲಾಗಿದೆ = corrected, ನವೀಕರಣ = update, ನವೀಕರಿಸಲಾಗಿದೆ = updated, ಸ್ಪಷ್ಟೀಕರಣ = clarification, ತಿದ್ದುಪಡಿ ಮಾಡಲಾಗಿದೆ = corrected, ಅಪ್‌ಡೇಟ್ = update)
+    kannada_signals = ["ತಿದ್ದುಪಡಿ", "ಸರಿಪಡಿಸಲಾಗಿದೆ", "ನವೀಕರಣ", "ನವೀಕರಿಸಲಾಗಿದೆ", "ಸ್ಪಷ್ಟೀಕರಣ", "ತಿದ್ದುಪಡಿ ಮಾಡಲಾಗಿದೆ", "ಅಪ್‌ಡೇಟ್"]
+    if (lang == "kn" or lang is None) and any(sig in text for sig in kannada_signals):
         return True
 
     return False

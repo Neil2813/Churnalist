@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.constants import ClaimType
 from app.llm.client import GroqClient
-from app.llm.prompts import CLAIM_MINER_PROMPT
+from app.llm.prompts import CLAIM_MINER_PROMPT, MULTILINGUAL_CLAIM_MINER_PROMPT
 
 
 class ExtractedClaimSchema(BaseModel):
@@ -25,6 +25,10 @@ class ExtractedClaimSchema(BaseModel):
     certainty: str | None = None
     severity: str | None = None
     raw_text: str
+    original_language: str | None = None
+    original_text: str | None = None
+    english_translation: str | None = None
+    extracted_value: str | None = None
 
 
 class ClaimMinerOutputSchema(BaseModel):
@@ -61,21 +65,36 @@ class ClaimMinerAgent:
     ) -> list[dict[str, Any]]:
         """
         Extract claims from article text using LLM or deterministic fallback if LLM client is missing/unconfigured.
+        For non-English articles, extracts factual claims and translates to English in a single call.
         """
         extracted_items: list[ExtractedClaimSchema] = []
+        is_non_english = bool(language and language.lower() not in {"en", "eng"})
 
         if self.llm_client and self.llm_client.api_key:
-            user_prompt = CLAIM_MINER_PROMPT.format(
-                title=title,
-                language=language,
-                content=content[:8000],  # Bound input size
-            )
-            result = await self.llm_client.generate_structured(
-                system_prompt="You are an expert factual claim extraction system.",
-                user_prompt=user_prompt,
-                response_schema=ClaimMinerOutputSchema,
-                prompt_version="claim_miner_v1",
-            )
+            if is_non_english:
+                user_prompt = MULTILINGUAL_CLAIM_MINER_PROMPT.format(
+                    title=title,
+                    language=language,
+                    content=content[:8000],
+                )
+                result = await self.llm_client.generate_structured(
+                    system_prompt="You are an expert factual claim extraction and multilingual translation system.",
+                    user_prompt=user_prompt,
+                    response_schema=ClaimMinerOutputSchema,
+                    prompt_version="multilingual_claim_miner_v1",
+                )
+            else:
+                user_prompt = CLAIM_MINER_PROMPT.format(
+                    title=title,
+                    language=language,
+                    content=content[:8000],  # Bound input size
+                )
+                result = await self.llm_client.generate_structured(
+                    system_prompt="You are an expert factual claim extraction system.",
+                    user_prompt=user_prompt,
+                    response_schema=ClaimMinerOutputSchema,
+                    prompt_version="claim_miner_v1",
+                )
             extracted_items = result.claims
         else:
             # Deterministic fallback claim extraction for demo / offline mode
@@ -88,12 +107,23 @@ class ClaimMinerAgent:
                         predicate="states",
                         object_value=sentence[:100],
                         raw_text=sentence,
+                        original_language=language,
+                        original_text=sentence,
+                        english_translation=sentence,
+                        extracted_value=sentence[:100],
                     )
                 )
 
         claims_out = []
         for claim in extracted_items:
-            start_offset, end_offset = self.find_source_span(content, claim.raw_text)
+            orig_text = claim.original_text or claim.raw_text
+            span_text = orig_text or claim.raw_text
+            start_offset, end_offset = self.find_source_span(content, span_text)
+
+            orig_lang = claim.original_language or language
+            eng_trans = claim.english_translation or (claim.raw_text if not is_non_english else orig_text)
+            ext_val = claim.extracted_value or claim.object_value
+
             claims_out.append({
                 "article_id": article_id,
                 "event_id": event_id,
@@ -106,6 +136,10 @@ class ClaimMinerAgent:
                 "certainty": claim.certainty,
                 "severity": claim.severity,
                 "raw_text": claim.raw_text,
+                "original_language": orig_lang,
+                "original_text": orig_text,
+                "english_translation": eng_trans,
+                "extracted_value": ext_val,
                 "source_start_offset": start_offset,
                 "source_end_offset": end_offset,
             })

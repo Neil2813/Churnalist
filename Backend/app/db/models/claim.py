@@ -61,8 +61,12 @@ class Claim(Base, UUIDMixin, TimestampMixin):
     modality: Mapped[str | None] = mapped_column(String(128), nullable=True)
     severity: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
-    # Source provenance
+    # Source provenance & multilingual fields
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    original_language: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    original_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    english_translation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extracted_value: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_start_offset: Mapped[int | None] = mapped_column(Integer, nullable=True)
     source_end_offset: Mapped[int | None] = mapped_column(Integer, nullable=True)
 

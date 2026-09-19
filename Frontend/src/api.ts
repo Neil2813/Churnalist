@@ -7,6 +7,21 @@ export interface Article {
   language: string;
   published_at: string;
   url: string;
+  content?: string;
+}
+
+export interface ArticleTranslationResponse {
+  article_id: string;
+  target_language: string;
+  target_language_name: string;
+  translated_title?: string;
+  translated_content: string;
+  original_language?: string;
+  original_language_name?: string;
+  original_title?: string;
+  original_content?: string;
+  cached: boolean;
+  created_at: string;
 }
 
 export interface EventResponse {
@@ -32,6 +47,8 @@ export interface Node {
   type: string;
   language?: string;
   date?: string;
+  original_text?: string;
+  english_translation?: string;
 }
 
 export interface Edge {
@@ -184,6 +201,16 @@ export const api = {
   async getReport(eventId: string): Promise<ReportResponse> {
     const res = await fetch(`${API_BASE}/reports/event/${eventId}`);
     if (!res.ok) throw new Error("Failed to fetch event report");
+    return res.json();
+  },
+
+  async translateArticle(articleId: string, lang: string = "en", titleOnly: boolean = false): Promise<ArticleTranslationResponse> {
+    const titleParam = titleOnly ? "&title_only=true" : "";
+    const res = await fetch(`${API_BASE}/articles/${articleId}/translate?lang=${encodeURIComponent(lang)}${titleParam}`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || "Failed to translate article");
+    }
     return res.json();
   }
 };

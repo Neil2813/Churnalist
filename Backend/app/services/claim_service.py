@@ -36,6 +36,10 @@ class ClaimService:
             modality=payload.modality,
             severity=payload.severity,
             raw_text=payload.raw_text,
+            original_language=payload.original_language,
+            original_text=payload.original_text,
+            english_translation=payload.english_translation,
+            extracted_value=payload.extracted_value,
             source_start_offset=payload.source_start_offset,
             source_end_offset=payload.source_end_offset,
         )

@@ -1,1 +1,9 @@
-Context/
+/Context/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.env
+*.env
+node_modules/
+dist/

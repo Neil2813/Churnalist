@@ -57,3 +57,20 @@ class ArticleDetailResponse(ArticleResponse):
     content_hash: str | None = None
     metadata_json: str | None = None
     versions: list[ArticleVersionResponse] = Field(default_factory=list)
+
+
+class ArticleTranslationResponse(BaseModel):
+    """Full-article translation response with caching metadata and original text for toggle."""
+    model_config = ConfigDict(from_attributes=True)
+
+    article_id: str
+    target_language: str
+    target_language_name: str
+    translated_title: str | None = None
+    translated_content: str
+    original_language: str | None = None
+    original_language_name: str | None = None
+    original_title: str | None = None
+    original_content: str | None = None
+    cached: bool = False
+    created_at: datetime

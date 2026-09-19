@@ -1,7 +1,7 @@
 # Models package — import all models so Alembic autogenerate sees them
 from app.db.models.event import Event
 from app.db.models.source import Source
-from app.db.models.article import Article, ArticleVersion
+from app.db.models.article import Article, ArticleVersion, ArticleTranslation
 from app.db.models.claim import Claim
 from app.db.models.claim_relation import ClaimRelation
 from app.db.models.correction import Correction
@@ -14,6 +14,7 @@ __all__ = [
     "Source",
     "Article",
     "ArticleVersion",
+    "ArticleTranslation",
     "Claim",
     "ClaimRelation",
     "Correction",

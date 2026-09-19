@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.analysis.numbers import check_numerical_drift
+from app.analysis.numbers import check_numerical_drift, extract_numbers_from_text
 from app.core.constants import RelationType
 
 
@@ -50,25 +50,50 @@ CERTAINTY_MODIFIERS: frozenset[str] = frozenset({
 })
 
 
+def _extract_text_for_analysis(item: str | dict[str, Any]) -> str:
+    """Extract English or fallback text from a string or claim dictionary."""
+    if isinstance(item, dict):
+        return item.get("english_translation") or item.get("raw_text") or item.get("object_value") or ""
+    return item or ""
+
+
+def _try_parse_numeric(val: Any) -> float | None:
+    """
+    Safely parse a numerical value from float, int, or string (e.g. '17', '~20', 'around 20').
+    Returns None without raising exceptions for non-numeric terms like 'several', 'many', 'unknown'.
+    """
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        cleaned = val.strip()
+        if not cleaned:
+            return None
+        try:
+            return float(cleaned)
+        except (ValueError, TypeError):
+            pass
+        nums = extract_numbers_from_text(cleaned)
+        if nums:
+            return nums[0]
+    return None
+
+
 def detect_severity_change(
-    source_text: str,
-    target_text: str,
+    source_text: str | dict[str, Any],
+    target_text: str | dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Detect severity amplification or softening between two claim texts.
+    Detect severity amplification or softening between two claim texts or claim dicts.
 
-    Returns:
-        {
-            "has_change": bool,
-            "direction": "AMPLIFICATION" | "SOFTENING" | "NONE",
-            "source_level": str | None,
-            "target_level": str | None,
-            "source_score": int,
-            "target_score": int,
-        }
+    Runs against claim.english_translation when a claim dict is provided.
     """
-    src_lower = source_text.lower()
-    tgt_lower = target_text.lower()
+    s_str = _extract_text_for_analysis(source_text)
+    t_str = _extract_text_for_analysis(target_text)
+
+    src_lower = s_str.lower()
+    tgt_lower = t_str.lower()
 
     src_match = _best_severity_match(src_lower)
     tgt_match = _best_severity_match(tgt_lower)
@@ -98,14 +123,17 @@ def detect_severity_change(
 
 
 def detect_certainty_change(
-    source_text: str,
-    target_text: str,
+    source_text: str | dict[str, Any],
+    target_text: str | dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Detect changes in certainty / epistemic modality between two claim texts.
+    Detect changes in certainty / epistemic modality between two claim texts or claim dicts.
     """
-    src_mods = _extract_certainty_modifiers(source_text.lower())
-    tgt_mods = _extract_certainty_modifiers(target_text.lower())
+    s_str = _extract_text_for_analysis(source_text)
+    t_str = _extract_text_for_analysis(target_text)
+
+    src_mods = _extract_certainty_modifiers(s_str.lower())
+    tgt_mods = _extract_certainty_modifiers(t_str.lower())
 
     added = tgt_mods - src_mods
     removed = src_mods - tgt_mods
@@ -120,23 +148,32 @@ def detect_certainty_change(
 
 
 def detect_attribution_loss(
-    source_text: str,
-    target_text: str,
+    source_text: str | dict[str, Any],
+    target_text: str | dict[str, Any],
 ) -> bool:
     """
     Return True if the source had explicit attribution that the target omits.
 
-    Simple heuristic: checks for 'said', 'according to', 'confirmed' patterns.
+    Simple heuristic: checks for 'said', 'according to', 'confirmed' patterns in English.
     """
+    s_str = _extract_text_for_analysis(source_text)
+    t_str = _extract_text_for_analysis(target_text)
+
     attribution_patterns = [
         r"\bsaid\b",
         r"\baccording to\b",
         r"\bconfirmed\b",
         r"\bannounced\b",
         r"\bstated\b",
+        r"\breported\b",
     ]
-    src_has = any(re.search(p, source_text.lower()) for p in attribution_patterns)
-    tgt_has = any(re.search(p, target_text.lower()) for p in attribution_patterns)
+    src_has = any(re.search(p, s_str.lower()) for p in attribution_patterns)
+    tgt_has = any(re.search(p, t_str.lower()) for p in attribution_patterns)
+
+    # Also check attribution metadata if provided as dicts
+    if isinstance(source_text, dict) and isinstance(target_text, dict):
+        if source_text.get("attribution") and not target_text.get("attribution"):
+            return True
 
     return src_has and not tgt_has
 
@@ -147,35 +184,45 @@ def classify_claim_relation(
     embedding_similarity: float = 0.0,
 ) -> dict[str, Any]:
     """
-    Classify the drift relation between two aligned claim dicts.
+    Classify the drift relation between two aligned claim dicts across languages.
 
-    Expected claim dict keys: raw_text, object_value, object_unit,
-    severity, certainty, attribution.
-
-    Returns:
-        {
-            "relation_type": RelationType,
-            "confidence": float,
-            "reason": str,
-            "evidence": dict,
-        }
+    Uses claim.english_translation (with fallback to raw_text) so English heuristics
+    apply uniformly across all languages.
     """
-    src_text = source_claim.get("raw_text", "") or ""
-    tgt_text = target_claim.get("raw_text", "") or ""
+    src_text = source_claim.get("english_translation") or source_claim.get("raw_text", "") or ""
+    tgt_text = target_claim.get("english_translation") or target_claim.get("raw_text", "") or ""
 
     evidence: dict[str, Any] = {}
 
     # ── Numeric drift ─────────────────────────────────────────────────────────
-    src_val = source_claim.get("object_value")
-    tgt_val = target_claim.get("object_value")
-    if src_val and tgt_val:
-        num_result = check_numerical_drift(src_val, tgt_val)
+    # Robust numeric parsing: handles numeric values (17, ~20) while safely ignoring
+    # qualitative values ('several', 'many', 'unknown') without exceptions.
+    src_val_raw = source_claim.get("extracted_value") or source_claim.get("object_value")
+    tgt_val_raw = target_claim.get("extracted_value") or target_claim.get("object_value")
+
+    if src_val_raw is None and src_text:
+        extracted_src = extract_numbers_from_text(src_text)
+        if extracted_src:
+            src_val_raw = extracted_src[0]
+
+    if tgt_val_raw is None and tgt_text:
+        extracted_tgt = extract_numbers_from_text(tgt_text)
+        if extracted_tgt:
+            tgt_val_raw = extracted_tgt[0]
+
+    src_num = _try_parse_numeric(src_val_raw)
+    tgt_num = _try_parse_numeric(tgt_val_raw)
+
+    if src_num is not None and tgt_num is not None:
+        num_result = check_numerical_drift(src_num, tgt_num)
         if num_result.get("has_drift"):
             evidence["numeric"] = num_result
+            evidence["source_extracted_value"] = src_val_raw
+            evidence["target_extracted_value"] = tgt_val_raw
             return {
                 "relation_type": RelationType.NUMERICAL_DRIFT,
                 "confidence": 0.90,
-                "reason": f"Numeric value changed from {src_val} to {tgt_val}.",
+                "reason": f"Numeric value changed from {src_val_raw} to {tgt_val_raw}.",
                 "evidence": evidence,
             }
 
@@ -197,7 +244,7 @@ def classify_claim_relation(
         }
 
     # ── Attribution loss ──────────────────────────────────────────────────────
-    if detect_attribution_loss(src_text, tgt_text):
+    if detect_attribution_loss(source_claim, target_claim) or detect_attribution_loss(src_text, tgt_text):
         evidence["attribution_loss"] = True
         return {
             "relation_type": RelationType.ATTRIBUTION_LOSS,

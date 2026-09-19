@@ -50,6 +50,58 @@ Return your response strictly as a JSON object matching this schema:
 }}
 """
 
+MULTILINGUAL_CLAIM_MINER_PROMPT = """
+You are an expert multilingual news analyst and claim extractor.
+Your job is to extract atomic factual claims from a news article published in {language} and translate them into English.
+
+Article Title: {title}
+Article Language: {language}
+Article Content:
+{content}
+
+Instructions:
+1. Identify the key factual claims in the article, especially:
+   - Casualty, injury, or death counts (e.g. 17, around 20, several, many).
+   - Attributions (e.g. "officials said", "police reported", or uncredited statements).
+   - Severity indicators (e.g. unharmed, minor, injured, seriously injured, critically injured, dead).
+   - Certainty modifiers (e.g. confirmed, alleged, around, approximately, feared, suspected).
+2. For each claim, return:
+   - claim_type: One of [CASUALTY, NUMBER, FACT, ATTRIBUTION, SEVERITY, CERTAINTY, LOCATION, DATE, STATUS, OTHER]
+   - subject: Subject in English (e.g. "people", "workers", "officials")
+   - predicate: Action/state in English (e.g. "injured", "killed", "reported")
+   - object_value: Value/count in English (e.g. "17", "around 20", "several", "unknown")
+   - object_unit: Unit if applicable (e.g. "people", "workers", null)
+   - extracted_value: Extracted count/number or quantity descriptor (e.g. "17", "~20", "several", "many", "unknown")
+   - attribution: Who stated or reported this, in English (e.g. "officials said", "police said", null if none)
+   - certainty: Degree of certainty in English (e.g. "confirmed", "around", "reported", "alleged", null)
+   - severity: Severity level in English (e.g. "injured", "seriously injured", "critically injured", "dead", null)
+   - original_language: "{language}"
+   - original_text: The EXACT excerpt or sentence in the native script ({language}) from the article.
+   - english_translation: Faithful English translation of original_text.
+   - raw_text: Same as original_text.
+
+Return your response strictly as a JSON object matching this schema:
+{{
+  "claims": [
+    {{
+      "claim_type": "CASUALTY",
+      "subject": "people",
+      "predicate": "injured",
+      "object_value": "around 20",
+      "object_unit": "people",
+      "extracted_value": "~20",
+      "attribution": null,
+      "certainty": "around",
+      "severity": "injured",
+      "original_language": "{language}",
+      "original_text": "சுமார் 20 பேர் காயமடைந்தனர்.",
+      "english_translation": "Around 20 people were injured.",
+      "raw_text": "சுமார் 20 பேர் காயமடைந்தனர்."
+    }}
+  ]
+}}
+"""
+
 
 # ── Agent 3: Event Weaver ─────────────────────────────────────────────────────
 
@@ -175,6 +227,32 @@ Return strictly as JSON matching this structure:
   }},
   "reader_takeaway": "...",
   "confidence_score": 0.92
+}}
+"""
+
+
+# ── Full Article Translation ──────────────────────────────────────────────────
+
+FULL_ARTICLE_TRANSLATION_PROMPT = """
+You are an expert news translator. Your task is to provide a complete, faithful translation of the news article below into {target_language_name} ({target_language}).
+
+Article Title:
+{title}
+
+Article Content:
+{content}
+
+Instructions:
+1. Translate the entire article and title faithfully into {target_language_name}.
+2. Preserve paragraph structure, line breaks, and factual nuances exactly as written in the original article.
+3. Do NOT summarize, abbreviate, condense, or omit any paragraphs or details.
+4. Do NOT add commentary, analysis, explanations, or notes.
+5. Maintain the original journalistic tone and voice.
+
+Return strictly as JSON with this schema:
+{{
+  "translated_title": "Translated headline in {target_language_name}",
+  "translated_content": "Full translated article body preserving paragraphs in {target_language_name}"
 }}
 """
 

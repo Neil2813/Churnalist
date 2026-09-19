@@ -24,6 +24,10 @@ class ClaimCreate(BaseModel):
     modality: str | None = None
     severity: str | None = None
     raw_text: str
+    original_language: str | None = None
+    original_text: str | None = None
+    english_translation: str | None = None
+    extracted_value: str | None = None
     source_start_offset: int | None = None
     source_end_offset: int | None = None
     normalized_value_json: dict[str, Any] | None = None
@@ -52,6 +56,10 @@ class ClaimResponse(BaseModel):
     severity: str | None = None
 
     raw_text: str
+    original_language: str | None = None
+    original_text: str | None = None
+    english_translation: str | None = None
+    extracted_value: str | None = None
     source_start_offset: int | None = None
     source_end_offset: int | None = None
 

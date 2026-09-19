@@ -53,6 +53,10 @@ class UnsupportedURLSchemeError(DriftError):
     status_code = HTTPStatus.BAD_REQUEST
     error_code = "UNSUPPORTED_URL_SCHEME"
 
+class UnsupportedLanguageError(DriftError):
+    status_code = HTTPStatus.BAD_REQUEST
+    error_code = "UNSUPPORTED_LANGUAGE"
+
 class SSRFBlockedError(DriftError):
     status_code = HTTPStatus.FORBIDDEN
     error_code = "SSRF_BLOCKED"
@@ -81,6 +85,11 @@ class ExternalServiceError(DriftError):
 
 class NewsProviderRateLimitError(NewsProviderError):
     error_code = "NEWS_PROVIDER_RATE_LIMITED"
+
+
+class TranslationError(DriftError):
+    status_code = HTTPStatus.BAD_GATEWAY
+    error_code = "TRANSLATION_FAILED"
 
 
 
