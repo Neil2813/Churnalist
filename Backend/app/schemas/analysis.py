@@ -47,8 +47,8 @@ class AnalysisRunResponse(BaseModel):
 
     id: str
     event_id: str
-    status: AnalysisStatus
-    current_stage: PipelineStage
+    status: AnalysisStatus | str = AnalysisStatus.QUEUED
+    current_stage: PipelineStage | str = PipelineStage.SOURCE_HUNTING
     error_message: str | None = None
     started_at: datetime
     completed_at: datetime | None = None

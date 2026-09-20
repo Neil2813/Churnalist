@@ -201,6 +201,9 @@ SUPPORTED_LANGUAGES: frozenset[str] = frozenset({
     "kn",  # Kannada
     "pa",  # Punjabi
     "ur",  # Urdu
+    "es",  # Spanish
+    "fr",  # French
+    "de",  # German
 })
 
 LANGUAGE_NAMES: dict[str, str] = {
@@ -215,6 +218,9 @@ LANGUAGE_NAMES: dict[str, str] = {
     "kn": "Kannada",
     "pa": "Punjabi",
     "ur": "Urdu",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
 }
 
 # Tracking parameters to strip during URL normalization

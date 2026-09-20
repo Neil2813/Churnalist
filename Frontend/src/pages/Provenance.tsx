@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, GitCommit } from 'lucide-react';
+import { ArrowLeft, GitCommit } from 'lucide-react';
 import { api } from '../api';
 import type { ProvenanceGraph, EventDetailResponse } from '../api';
 
@@ -42,9 +42,31 @@ export default function Provenance() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 mt-8">
-        <Loader2 className="animate-spin mb-4" size={32} />
-        <p className="text-muted font-mono">Tracing story provenance...</p>
+      <div className="fade-in mt-4 animate-pulse">
+        <div className="h-6 w-36 mb-6" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+        <div className="mb-8">
+          <div className="h-8 w-2/3 mb-2" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+          <div className="h-4 w-40 mb-4" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+          <hr className="editorial-rule" />
+        </div>
+        <div className="max-w-2xl mx-auto border-left pl-8 relative ml-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="mb-12 relative">
+              <div className="absolute -left-[41px] top-1 bg-paper border-all p-1 z-10 rounded-full">
+                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.2 }} />
+              </div>
+              <div className="p-4 border-all bg-white shadow-sm">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="h-3 w-24" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+                  <div className="h-3 w-8" style={{ backgroundColor: 'var(--color-blue)', opacity: 0.3 }} />
+                </div>
+                <div className="h-6 w-full mb-2" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+                <div className="h-3 w-40 mb-2" style={{ backgroundColor: 'var(--color-ink)', opacity: 0.15 }} />
+                <div className="h-3 w-20" style={{ backgroundColor: 'var(--color-blue)', opacity: 0.3 }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

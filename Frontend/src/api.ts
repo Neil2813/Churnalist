@@ -136,6 +136,7 @@ export const api = {
   async discoverEvent(topic: string, url?: string): Promise<EventResponse> {
     const payload: any = { max_articles: 10 };
     if (url) {
+      payload.url = url;
       payload.seed_url = url;
     } else {
       payload.topic = topic;
@@ -149,7 +150,15 @@ export const api = {
     });
     
     if (!res.ok) throw new Error("Failed to discover event");
-    return res.json();
+    const data = await res.json();
+    return {
+      id: data.id || data.event_id,
+      event_id: data.event_id || data.id,
+      run_id: data.run_id,
+      title: topic || url || "Discovered Event",
+      status: data.status || "QUEUED",
+      article_count: 0,
+    } as any;
   },
 
   async getEvent(id: string): Promise<EventDetailResponse> {
@@ -182,8 +191,9 @@ export const api = {
     return res.json();
   },
 
-  async getTopNews(): Promise<any[]> {
-    const res = await fetch(`${API_BASE}/news/top`);
+  async getTopNews(category?: string): Promise<any[]> {
+    const catParam = category && category !== 'ALL' ? `?category=${encodeURIComponent(category)}` : '';
+    const res = await fetch(`${API_BASE}/news/top${catParam}`);
     if (!res.ok) throw new Error("Failed to fetch top news");
     return res.json();
   },
@@ -212,6 +222,22 @@ export const api = {
       throw new Error(errData?.error?.message || "Failed to translate article");
     }
     return res.json();
+  },
+
+  async translateText(text: string, targetLang: string): Promise<string> {
+    if (!text || !text.trim() || targetLang === "en") return text;
+    try {
+      const res = await fetch(`${API_BASE}/articles/translate-text`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, target_lang: targetLang })
+      });
+      if (!res.ok) return text;
+      const data = await res.json();
+      return data.translated_text || text;
+    } catch {
+      return text;
+    }
   }
 };
 

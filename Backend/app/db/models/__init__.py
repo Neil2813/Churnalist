@@ -8,6 +8,8 @@ from app.db.models.correction import Correction
 from app.db.models.provenance import ProvenanceEdge
 from app.db.models.analysis_run import AnalysisRun
 from app.db.models.ingestion_job import IngestionJob
+from app.db.models.search_result import SearchResult
+from app.db.models.retrieval_chunk import RetrievalChunk
 
 __all__ = [
     "Event",
@@ -21,4 +23,7 @@ __all__ = [
     "ProvenanceEdge",
     "AnalysisRun",
     "IngestionJob",
+    "SearchResult",
+    "RetrievalChunk",
 ]
+

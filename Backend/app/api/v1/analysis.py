@@ -29,11 +29,23 @@ async def trigger_analysis_run(db: DBSession, payload: AnalysisRunRequest) -> Re
 async def get_analysis_run(db: DBSession, run_id: str) -> AnalysisRunResponse:
     """
     Poll the status and progress of a running or completed analysis.
-
-    Frontend should call this endpoint every few seconds after triggering
-    POST /analysis/run to track pipeline progress.
     """
     run = await AnalysisRepository.get_run_by_id(db, run_id)
     if not run:
         raise AnalysisRunNotFoundError(f"Analysis run '{run_id}' not found.")
     return AnalysisRunResponse.model_validate(run)
+
+
+# Alias router for /analysis-runs/{run_id}
+runs_router = APIRouter(tags=["Analysis"])
+
+
+@runs_router.get(
+    "/analysis-runs/{run_id}",
+    response_model=AnalysisRunResponse,
+    summary="Get analysis run status (for polling - alias endpoint)",
+)
+async def get_analysis_run_alias(db: DBSession, run_id: str) -> AnalysisRunResponse:
+    """Poll status of an analysis run by run_id."""
+    return await get_analysis_run(db, run_id)
+

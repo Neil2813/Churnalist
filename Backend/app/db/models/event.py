@@ -42,6 +42,16 @@ class Event(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
 
+    # Event context & Search window fields
+    incident_type: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    anchor_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    search_window_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    search_window_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    locations_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    countries_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    organizations_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    entities_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Deterministic fingerprint for deduplication
     canonical_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
 

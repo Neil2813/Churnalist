@@ -96,7 +96,7 @@ async def translate_article(
 ) -> ArticleTranslationResponse:
     """
     Translate full news article title and content into the requested target language.
-    Checks the database cache table first; calls the LLM if not cached, then stores and returns the result.
+    Checks the database cache table first; calls Google Translate if not cached, then stores and returns the result.
     """
     return await translation_service.get_or_translate_article(
         db=db,
@@ -104,3 +104,32 @@ async def translate_article(
         target_language=lang,
         title_only=title_only,
     )
+
+
+from pydantic import BaseModel
+
+class TranslateTextPayload(BaseModel):
+    text: str
+    target_lang: str = "en"
+
+class TranslateTextResponse(BaseModel):
+    original_text: str
+    translated_text: str
+    target_lang: str
+
+
+@router.post(
+    "/translate-text",
+    response_model=TranslateTextResponse,
+    summary="Translate text snippet using free Google Translate",
+)
+async def translate_text(payload: TranslateTextPayload) -> TranslateTextResponse:
+    """Translate arbitrary text snippet using free Google Translate engine."""
+    from app.services.translation_service import google_translate_free
+    translated = await google_translate_free(payload.text, target_lang=payload.target_lang)
+    return TranslateTextResponse(
+        original_text=payload.text,
+        translated_text=translated or payload.text,
+        target_lang=payload.target_lang,
+    )
+

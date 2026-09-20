@@ -1,0 +1,74 @@
+{
+  "title": "IN PICS | Ernakulam-Bengaluru KSRTC bus collides with lorry in Tamil Nadu, 19 dead",
+  "incident_type": "bus collision",
+  "location": "Tamil Nadu (specific sites mentioned in evidence vary)",
+  "claims": [
+    {
+      "claim_id": "claim_1",
+      "text": "19 people were killed in the collision",
+      "source": "title",
+      "evidence": null
+    },
+    {
+      "claim_id": "claim_2",
+      "text": "Four people were killed and around 16 others were injured",
+      "source": "art_ba6433c4b759",
+      "evidence": "Four people travelling in the two vehicles were killed, and around 16 others were injured."
+    },
+    {
+      "claim_id": "claim_3",
+      "text": "Nine people were killed in a bus‑SUV‑car collision on a national highway near Cuddalore",
+      "source": "art_6899a7611539",
+      "evidence": "killing nine people"
+    },
+    {
+      "claim_id": "claim_4",
+      "text": "No deaths reported; 17 passengers injured and over 20 people feared trapped after a bus plunged into a river",
+      "source": "art_b094b67ba2f9",
+      "evidence": "Seventeen passengers sustained injuries ... fears that more than 20 people may be trapped."
+    }
+  ],
+  "contradictions": [
+    {
+      "type": "death toll",
+      "conflicting_claims": [
+        "claim_1",
+        "claim_2"
+      ],
+      "description": "Title reports 19 dead while article art_ba6433c4b759 reports 4 dead",
+      "evidence_ids": [
+        "art_ba6433c4b759"
+      ]
+    },
+    {
+      "type": "death toll",
+      "conflicting_claims": [
+        "claim_1",
+        "claim_3"
+      ],
+      "description": "Title reports 19 dead while article art_6899a7611539 reports 9 dead",
+      "evidence_ids": [
+        "art_6899a7611539"
+      ]
+    },
+    {
+      "type": "death toll",
+      "conflicting_claims": [
+        "claim_1",
+        "claim_4"
+      ],
+      "description": "Title reports 19 dead while article art_b094b67ba2f9 reports no deaths",
+      "evidence_ids": [
+        "art_b094b67ba2f9"
+      ]
+    }
+  ],
+  "summary": "The available evidence provides varying casualty figures (4, 9, or none) and does not confirm the 19 deaths stated in the title. The incident involved a KSRTC bus and a lorry (or other vehicles) on a highway in Tamil Nadu. Further verification is needed to resolve the discrepancy between the headline claim and the reported figures in the source articles.",
+  "event": {
+    "id": "evt_f0044ab38f18",
+    "title": "IN PICS | Ernakulam-Bengaluru KSRTC bus collides with lorry in Tamil Nadu, 19 dead",
+    "incident_type": "bus collision",
+    "location_name": null,
+    "event_time": null
+  }
+}

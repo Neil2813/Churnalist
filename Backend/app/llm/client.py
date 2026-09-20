@@ -42,18 +42,44 @@ class GroqClient:
 
     def __init__(
         self,
-        api_key: str,
-        default_model: str,
-        fast_model: str,
+        api_key: str | None = None,
+        default_model: str | None = None,
+        fast_model: str | None = None,
         timeout: float = 60.0,
         max_concurrent: int = 4,
     ) -> None:
-        self.api_key = api_key
-        self.default_model = default_model
-        self.fast_model = fast_model
+        from app.core.config import get_settings
+        s = get_settings()
+        self.api_key = api_key or s.groq_api_key
+        self.default_model = default_model or s.groq_model
+        self.fast_model = fast_model or s.groq_fast_model
         self.timeout = timeout
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._client = None
+
+    async def generate_json(
+        self,
+        *,
+        prompt: str,
+        system_prompt: str = "Return strict JSON.",
+        temperature: float = 0.0,
+        model: str | None = None,
+    ) -> dict[str, Any] | list[Any]:
+        """Call Groq and parse raw JSON output."""
+        use_model = model or self.default_model
+        raw = await self._call(
+            system_prompt=system_prompt,
+            user_prompt=prompt,
+            model=use_model,
+            temperature=temperature,
+            timeout=self.timeout,
+        )
+        clean_raw = raw.strip()
+        first_brace = clean_raw.find("{")
+        last_brace = clean_raw.rfind("}")
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            clean_raw = clean_raw[first_brace:last_brace + 1]
+        return json.loads(clean_raw)
 
     def _get_client(self):
         if self._client is None:

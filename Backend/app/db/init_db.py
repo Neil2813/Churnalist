@@ -32,6 +32,39 @@ def _migrate_claims_schema(sync_conn) -> None:
                 logger.info("migrated_claims_column", column=col_name)
 
 
+def _migrate_events_schema(sync_conn) -> None:
+    """Idempotently add event context & search window columns to events table if missing."""
+    from sqlalchemy import inspect
+    inspector = inspect(sync_conn)
+    if "events" in inspector.get_table_names():
+        existing_cols = {c["name"] for c in inspector.get_columns("events")}
+        new_columns = [
+            ("incident_type", "VARCHAR(256)"),
+            ("anchor_timestamp", "TIMESTAMP"),
+            ("search_window_start", "TIMESTAMP"),
+            ("search_window_end", "TIMESTAMP"),
+            ("locations_json", "TEXT"),
+            ("countries_json", "TEXT"),
+            ("organizations_json", "TEXT"),
+            ("entities_json", "TEXT"),
+        ]
+        for col_name, col_type in new_columns:
+            if col_name not in existing_cols:
+                sync_conn.execute(text(f"ALTER TABLE events ADD COLUMN {col_name} {col_type}"))
+                logger.info("migrated_events_column", column=col_name)
+
+
+def _migrate_runs_schema(sync_conn) -> None:
+    """Idempotently add result_summary_json column to analysis_runs table if missing."""
+    from sqlalchemy import inspect
+    inspector = inspect(sync_conn)
+    if "analysis_runs" in inspector.get_table_names():
+        existing_cols = {c["name"] for c in inspector.get_columns("analysis_runs")}
+        if "result_summary_json" not in existing_cols:
+            sync_conn.execute(text("ALTER TABLE analysis_runs ADD COLUMN result_summary_json TEXT"))
+            logger.info("migrated_analysis_runs_column", column="result_summary_json")
+
+
 async def init_database(engine: AsyncEngine) -> None:
     """
     Create all SQLAlchemy tables (if they do not exist) and ensure the
@@ -41,12 +74,18 @@ async def init_database(engine: AsyncEngine) -> None:
     a convenience for the hackathon development workflow.
     """
     async with engine.begin() as conn:
+        # Enable WAL mode and busy timeout for concurrent SQLite reads/writes
+        await conn.execute(text("PRAGMA journal_mode=WAL;"))
+        await conn.execute(text("PRAGMA busy_timeout=30000;"))
+
         # Create all ORM-mapped tables
         await conn.run_sync(Base.metadata.create_all)
         logger.info("db_tables_created_or_verified")
 
-        # Migrate claims table for multilingual columns if missing
+        # Migrate claims, events, and runs tables for new columns if missing
         await conn.run_sync(_migrate_claims_schema)
+        await conn.run_sync(_migrate_events_schema)
+        await conn.run_sync(_migrate_runs_schema)
 
         # Create FTS5 virtual table for full-text search over articles
         await conn.execute(text("""

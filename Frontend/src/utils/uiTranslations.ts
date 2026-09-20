@@ -1,6 +1,6 @@
 // UI Translations dictionary for English, Hindi, Tamil, Telugu, Bengali, Kannada
 
-export type SupportedLanguage = 'en' | 'hi' | 'ta' | 'te' | 'bn' | 'kn';
+export type SupportedLanguage = 'en' | 'hi' | 'ta' | 'te' | 'bn' | 'kn' | 'mr';
 
 export interface UiStrings {
   // Navigation & Header
@@ -357,6 +357,56 @@ export const UI_TRANSLATIONS: Record<SupportedLanguage, UiStrings> = {
     confidenceScore: "বিশ্বাসযোগ্যতা স্কোর",
     detectedDriftCount: "শনাক্তকৃত পরিবর্তন",
     severityLevel: "তীব্রতা"
+  },
+
+  mr: {
+    investigate: "तपास करा",
+    stories: "बातम्या",
+    tagline: "तीच बातमी. भिन्न वास्तव.",
+    topBarLeft: "जागतिक बातमी. सखोल संदर्भ.",
+    topBarRight: "सत्यापेक्षा तथ्ये वेगाने प्रवास करतात.",
+
+    heroQuote: '"माहितीच्या जगात, संदर्भ हेच सर्वस्व आहे."',
+    heroAuthor: "— चर्नलिस्ट",
+    heroHeadline: "तीच बातमी नेहमी सारखी राहत नाही.",
+    heroSide: "लोक बातम्या वाचतात. आम्ही ओळींमधील अर्थ वाचतो.",
+
+    searchPlaceholder: "तुमच्या बातमीची URL प्रविष्ट करा",
+    traceBtn: "शोध घ्या",
+    tracingBtn: "शोधत आहे...",
+
+    translateFullArticle: "पूर्ण लेख भाषांतरित करा:",
+    translateBtn: "भाषांतर करा",
+    translatingBtn: "भाषांतर होत आहे...",
+    viewOriginal: "मूळ पहा",
+    viewTranslation: "भाषांतर पहा",
+    translatedFrom: "वरून भाषांतरित",
+    into: "मध्ये",
+    viewingOriginal: "मूळ मजकूर पाहत आहात",
+    fromCache: "कॅशवरून",
+
+    by: "द्वारा",
+    readArticle: "लेख वाचा",
+    readMainSource: "मुख्य स्रोत वाचा",
+    today: "आज",
+    translatingCard: "भाषांतर होत आहे...",
+
+    analysisTitle: "उत्पत्ती आणि विचलन विश्लेषण",
+    analyzingReport: "GROQ AI द्वारे विचलन विश्लेषण सुरू आहे...",
+    summaryTitle: "कार्यकारी सारांश",
+    sourcesTitle: "स्रोत तुलना आणि तपासणी",
+    driftTitle: "ओळखलेले विचलन संकेत",
+    correctionsTitle: "दुरुस्ती तपशील",
+    primarySource: "प्राथमिक स्रोत",
+    derivativeSource: "दुय्यम स्रोत",
+    originalText: "मूळ मजकूर",
+    driftedText: "बदललेला मजकूर",
+    shiftDetected: "बदल आढळला",
+    noDrift: "स्रोतांमध्ये कोणताही मोठा बदल आढळला नाही.",
+    noCorrections: "कोणत्याही दुरुस्तीची नोंद नाही.",
+    confidenceScore: "विश्वासार्हता गुण",
+    detectedDriftCount: "ओळखलेले बदल",
+    severityLevel: "तीव्रता"
   }
 };
 

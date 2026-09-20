@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     app_env: Literal["development", "production", "test", "demo"] = "development"
     debug: bool = False
 
+    # ── Cloud vs Local Fallback Toggles (Default: Local Fallback) ─────────────
+    use_opensearch: bool = Field(False, validation_alias=AliasChoices("use_opensearch", "USE_OPENSEARCH"))
+    opensearch_endpoint: str = Field("", validation_alias=AliasChoices("opensearch_endpoint", "OPENSEARCH_ENDPOINT"))
+
+    use_aws_s3: bool = Field(False, validation_alias=AliasChoices("use_aws_s3", "USE_AWS_S3"))
+    aws_s3_bucket: str = Field("churnalist-evidence", validation_alias=AliasChoices("aws_s3_bucket", "AWS_S3_BUCKET"))
+
+    use_strands_agents: bool = Field(False, validation_alias=AliasChoices("use_strands_agents", "USE_STRANDS_AGENTS"))
+    use_cloudwatch: bool = Field(False, validation_alias=AliasChoices("use_cloudwatch", "USE_CLOUDWATCH"))
+
     # ── Database ─────────────────────────────────────────────────────────────
     database_url: str = "sqlite+aiosqlite:///./data/news.db"
 
@@ -58,6 +68,19 @@ class Settings(BaseSettings):
     drift_engine_version: int = 1
     report_version: int = 1
 
+    # ── Search Provider ───────────────────────────────────────────────────────
+    search_provider: str = Field("serpapi", validation_alias=AliasChoices("search_provider", "SEARCH_PROVIDER"))
+    search_engine: str = Field("duckduckgo", validation_alias=AliasChoices("search_engine", "SEARCH_ENGINE"))
+    serpapi_api_key: str = Field("", validation_alias=AliasChoices("serpapi_api_key", "SERPAPI_API_KEY"))
+
+    # ── Event Candidate Matching Weights ──────────────────────────────────────
+    match_weight_semantic: float = 0.25
+    match_weight_location: float = 0.20
+    match_weight_entities: float = 0.20
+    match_weight_incident: float = 0.15
+    match_weight_temporal: float = 0.10
+    match_weight_headline: float = 0.10
+
     # ── News API keys & Endpoints (optional – system degrades gracefully) ─────
     gnews_api_key: str = Field("", validation_alias=AliasChoices("gnews_api_key", "gnews"))
     newsdata_api_key: str = Field("", validation_alias=AliasChoices("newsdata_api_key", "newsdata"))
@@ -70,6 +93,8 @@ class Settings(BaseSettings):
 
     @field_validator(
         "groq_api_key",
+        "serpapi_api_key",
+        "gnews_api_key",
         "gnews_api_key",
         "newsdata_api_key",
         "mediastack_api_key",

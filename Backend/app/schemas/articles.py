@@ -44,8 +44,8 @@ class ArticleResponse(BaseModel):
     published_at: datetime | None = None
     retrieved_at: datetime | None = None
 
-    source_type: SourceType
-    extraction_status: ExtractionStatus
+    source_type: SourceType | str = SourceType.OTHER
+    extraction_status: ExtractionStatus | str = ExtractionStatus.FULL
 
     created_at: datetime
     updated_at: datetime

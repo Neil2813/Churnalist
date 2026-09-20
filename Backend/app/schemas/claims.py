@@ -41,7 +41,7 @@ class ClaimResponse(BaseModel):
     event_id: str
     article_id: str
 
-    claim_type: ClaimType
+    claim_type: ClaimType | str = ClaimType.OTHER
     subject: str
     predicate: str
     object_value: str
@@ -75,7 +75,7 @@ class ClaimRelationResponse(BaseModel):
     id: str
     source_claim_id: str
     target_claim_id: str
-    relation_type: RelationType
+    relation_type: RelationType | str = RelationType.SAME
     confidence: float | ConfidenceLevel = 1.0
     reason: str | None = None
     evidence_json: dict[str, Any] | None = None

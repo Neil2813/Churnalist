@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Link as LinkIcon, Loader2, 
-  Sparkles, Cpu, CheckCircle2, Clock, GitCompare, Flame, 
-  ShieldCheck, ExternalLink, Languages 
+  ExternalLink 
 } from 'lucide-react';
 import { api } from '../api';
 import type { EventDetailResponse, ReportResponse, ArticleTranslationResponse } from '../api';
 import { useLanguage } from '../context/LanguageContext';
 import type { SupportedLanguage } from '../utils/uiTranslations';
+import { StoryVerificationReport } from '../components/StoryVerificationReport';
 
 const SkeletonItem = ({ isMain = false }: { isMain?: boolean }) => (
   <div className={`newspaper-article ${isMain ? 'main-story border-0' : ''}`}>
@@ -60,14 +60,7 @@ const SkeletonCenterSecondary = () => (
   </div>
 );
 
-const SUPPORTED_TRANSLATION_LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'hi', name: 'Hindi (हिन्दी)' },
-  { code: 'ta', name: 'Tamil (தமிழ்)' },
-  { code: 'te', name: 'Telugu (తెలుగు)' },
-  { code: 'bn', name: 'Bengali (বাংলা)' },
-  { code: 'kn', name: 'Kannada (ಕನ್ನಡ)' },
-];
+
 
 export default function Home() {
   const { t, language, setLanguage } = useLanguage();
@@ -83,18 +76,99 @@ export default function Home() {
   const [investigatedReport, setInvestigatedReport] = useState<ReportResponse | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
 
+  const [translatedReport, setTranslatedReport] = useState<{
+    headline?: string;
+    summary?: string;
+    accuracy?: string;
+    publisher?: string;
+    drifts?: string;
+    churn?: string;
+    takeaway?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!investigatedReport) return;
+    if (language === 'en') {
+      setTranslatedReport(null);
+      return;
+    }
+    let active = true;
+    const translateReport = async () => {
+      try {
+        const [tHeadline, tSummary, tAccuracy, tPublisher, tDrifts, tChurn, tTakeaway] = await Promise.all([
+          investigatedReport.headline ? api.translateText(investigatedReport.headline, language) : Promise.resolve(''),
+          investigatedReport.summary ? api.translateText(investigatedReport.summary, language) : Promise.resolve(''),
+          investigatedReport.accuracy_analysis ? api.translateText(investigatedReport.accuracy_analysis, language) : Promise.resolve(''),
+          investigatedReport.first_publisher ? api.translateText(investigatedReport.first_publisher, language) : Promise.resolve(''),
+          (investigatedReport.key_drifts && investigatedReport.key_drifts.length > 0) ? api.translateText(`${investigatedReport.key_drifts.length} story modifications identified across coverage.`, language) : Promise.resolve(''),
+          investigatedReport.churn_analysis ? api.translateText(investigatedReport.churn_analysis, language) : Promise.resolve(''),
+          investigatedReport.reader_takeaway ? api.translateText(investigatedReport.reader_takeaway, language) : Promise.resolve('')
+        ]);
+        if (active) {
+          setTranslatedReport({
+            headline: tHeadline,
+            summary: tSummary,
+            accuracy: tAccuracy,
+            publisher: tPublisher,
+            drifts: tDrifts,
+            churn: tChurn,
+            takeaway: tTakeaway
+          });
+        }
+      } catch (err) {
+        console.warn("Report translation error:", err);
+      }
+    };
+    translateReport();
+    return () => { active = false; };
+  }, [language, investigatedReport]);
+
   // Full article translation on read states
   const [selectedLanguage, setSelectedLanguage] = useState<string>(language);
   const [translation, setTranslation] = useState<ArticleTranslationResponse | null>(null);
-  const [translating, setTranslating] = useState<boolean>(false);
-  const [translationError, setTranslationError] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState<boolean>(false);
   const [sidebarTranslations, setSidebarTranslations] = useState<Record<string, ArticleTranslationResponse>>({});
   const [translatingSidebarIds, setTranslatingSidebarIds] = useState<Record<string, boolean>>({});
 
+  // Top news auto-translation state
+  const [translatedNewsArticles, setTranslatedNewsArticles] = useState<any[]>([]);
+
   useEffect(() => {
     setSelectedLanguage(language);
   }, [language]);
+
+  useEffect(() => {
+    if (language === 'en' || newsArticles.length === 0) {
+      setTranslatedNewsArticles([]);
+      return;
+    }
+
+    let active = true;
+    const translateTopNews = async () => {
+      try {
+        const translated = await Promise.all(
+          newsArticles.map(async (art) => {
+            const [transTitle, transExcerpt] = await Promise.all([
+              api.translateText(art.title, language),
+              api.translateText(art.excerpt || art.content || '', language)
+            ]);
+            return {
+              ...art,
+              title: transTitle,
+              excerpt: transExcerpt,
+              content: transExcerpt
+            };
+          })
+        );
+        if (active) setTranslatedNewsArticles(translated);
+      } catch (err) {
+        console.warn("Top news translation failed:", err);
+      }
+    };
+
+    translateTopNews();
+    return () => { active = false; };
+  }, [language, newsArticles]);
 
   // Helper to map investigated articles to newspaper layout format
   const transformArticle = (art: any, isMain = false) => ({
@@ -112,30 +186,45 @@ export default function Home() {
 
   const displayArticles = (isInvestigating && investigatedEvent?.articles && investigatedEvent.articles.length > 0)
     ? investigatedEvent.articles.map((a, idx) => transformArticle(a, idx === 0))
-    : newsArticles;
+    : (translatedNewsArticles.length > 0 ? translatedNewsArticles : newsArticles);
 
   const triggerTranslation = async (articleId: string, lang: string, articlesList?: any[]) => {
     if (!articleId) return;
     setSelectedLanguage(lang);
     setLanguage(lang as SupportedLanguage);
-    setTranslating(true);
-    setTranslationError(null);
     setShowOriginal(false);
 
-    // 1. Translate main story first so user gets the main article immediately
+    const articles = (articlesList && articlesList.length > 0) ? articlesList : displayArticles;
+
+    // 1. Translate main story
     const mainPromise = (async () => {
       try {
         const data = await api.translateArticle(articleId, lang, false);
         setTranslation(data);
       } catch (err: any) {
-        setTranslationError(err.message || 'Translation failed, please try again');
-      } finally {
-        setTranslating(false);
+        const mainArt = articles[0];
+        if (mainArt) {
+          const [tTitle, tContent] = await Promise.all([
+            api.translateText(mainArt.title, lang),
+            api.translateText(mainArt.content || mainArt.excerpt || '', lang)
+          ]);
+          setTranslation({
+            article_id: articleId,
+            target_language: lang,
+            target_language_name: lang.toUpperCase(),
+            translated_title: tTitle,
+            translated_content: tContent,
+            original_language: 'en',
+            original_title: mainArt.title,
+            original_content: mainArt.content || mainArt.excerpt,
+            cached: false,
+            created_at: new Date().toISOString()
+          });
+        }
       }
     })();
 
-    // 2. Translate all visible sidebar cards (headline + excerpt) in parallel
-    const articles = (articlesList && articlesList.length > 0) ? articlesList : displayArticles;
+    // 2. Translate all visible sidebar cards in parallel
     const sidebarArticles = articles.slice(1, 8).filter((a: any) => a.id && a.id !== articleId);
 
     const sidebarPromises = sidebarArticles.map(async (art: any) => {
@@ -144,17 +233,32 @@ export default function Home() {
         const data = await api.translateArticle(art.id, lang, true);
         setSidebarTranslations(prev => ({ ...prev, [art.id]: data }));
       } catch (err) {
-        console.warn(`Sidebar translation failed for article ${art.id}:`, err);
+        try {
+          const [tTitle, tExcerpt] = await Promise.all([
+            api.translateText(art.title, lang),
+            api.translateText(art.excerpt || '', lang)
+          ]);
+          setSidebarTranslations(prev => ({
+            ...prev,
+            [art.id]: {
+              article_id: art.id,
+              target_language: lang,
+              target_language_name: lang.toUpperCase(),
+              translated_title: tTitle,
+              translated_content: tExcerpt,
+              cached: false,
+              created_at: new Date().toISOString()
+            }
+          }));
+        } catch (e) {
+          console.warn(`Sidebar translation failed for article ${art.id}:`, e);
+        }
       } finally {
         setTranslatingSidebarIds(prev => ({ ...prev, [art.id]: false }));
       }
     });
 
     await Promise.allSettled([mainPromise, ...sidebarPromises]);
-  };
-
-  const handleTranslate = async (articleId: string, lang: string) => {
-    await triggerTranslation(articleId, lang);
   };
 
   useEffect(() => {
@@ -181,7 +285,6 @@ export default function Home() {
     setInvestigatedEvent(null);
     setInvestigatedReport(null);
     setTranslation(null);
-    setTranslationError(null);
     setShowOriginal(false);
     setSidebarTranslations({});
     setTranslatingSidebarIds({});
@@ -302,7 +405,7 @@ export default function Home() {
       </section>
 
       {/* 3-Column Newspaper Layout Grid (Default vs Searched URL result) */}
-      {isInvestigating && <section className="mb-12 w-full min-h-[400px]">
+      <section className="mb-12 w-full min-h-[400px]">
         {showLoadingState ? (
           <div className="newspaper-layout" style={{ padding: '2rem' }}>
             <div className="newspaper-col-left">
@@ -320,352 +423,195 @@ export default function Home() {
         ) : (
           <div className="newspaper-layout" style={{ padding: '2rem' }}>
 
-            {/* Left Column */}
-            <div className="newspaper-col-left">
-              {displayArticles.slice(1, 4).map(article => {
-                const sidebarTrans = sidebarTranslations[article.id];
-                const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
-                const activeTitle = (sidebarTrans && !showOriginal)
-                  ? (sidebarTrans.translated_title || article.title)
-                  : article.title;
-                const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
-                  ? (sidebarTrans.translated_content.slice(0, 200) + '...')
-                  : article.excerpt;
-                const isTranslated = Boolean(sidebarTrans && !showOriginal);
+            {/* 3-Column Balanced Newspaper Grid */}
+            {(() => {
+              const mainArticle = displayArticles[0];
+              const remainingArticles = displayArticles.slice(1);
+              const leftArticles: any[] = [];
+              const rightArticles: any[] = [];
+              const centerSecondaryArticles: any[] = [];
 
-                return (
-                  <div key={article.id} className="newspaper-article">
-                    <div className="news-meta">
-                      <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
-                      <span className="date">{article.date}</span>
-                      {isSidebarTranslating && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse">
-                          <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-display text-xl mb-2">{activeTitle}</h3>
-                    <div className="font-ui text-sm mb-4">
-                      <span className="font-bold mr-2">{t.by} {article.source}</span>
-                      <span className="text-muted">{activeExcerpt}</span>
-                    </div>
-                    <a href={article.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue text-xs font-bold font-mono inline-flex items-center gap-1">
-                      {t.readArticle} <ExternalLink size={12}/>
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
+              remainingArticles.forEach((article, index) => {
+                if (index === 0 && remainingArticles.length >= 4) {
+                  centerSecondaryArticles.push(article);
+                } else if (leftArticles.length <= rightArticles.length) {
+                  leftArticles.push(article);
+                } else {
+                  rightArticles.push(article);
+                }
+              });
 
-            {/* Center Column (Main Story) */}
-            <div className="newspaper-col-center">
-              {displayArticles.slice(0, 1).map(article => {
-                const isCurrentTranslation = Boolean(translation && translation.article_id === article.id);
-                const activeTitle = (isCurrentTranslation && !showOriginal)
-                  ? (translation?.translated_title || article.title)
-                  : article.title;
-                const activeContent = (isCurrentTranslation && !showOriginal)
-                  ? (translation?.translated_content || article.content || article.excerpt)
-                  : (article.content || article.excerpt);
-                const isTranslatedView = isCurrentTranslation && !showOriginal;
+              return (
+                <>
+                  {/* Left Column */}
+                  <div className="newspaper-col-left">
+                    {leftArticles.map(article => {
+                      const sidebarTrans = sidebarTranslations[article.id];
+                      const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
+                      const activeTitle = (sidebarTrans && !showOriginal)
+                        ? (sidebarTrans.translated_title || article.title)
+                        : article.title;
+                      const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
+                        ? (sidebarTrans.translated_content.slice(0, 200) + '...')
+                        : article.excerpt;
+                      const isTranslated = Boolean(sidebarTrans && !showOriginal);
 
-                return (
-                  <div key={article.id} className="newspaper-article main-story border-0">
-                    
-                    {/* Translation Control Panel (URL-paste translation on read) */}
-                    {isInvestigating && (
-                      <div className="w-full bg-paper border-all p-3 mb-6 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
-                            <Languages size={18} className="text-blue" />
-                            <span className="font-mono text-xs font-bold uppercase tracking-wider">
-                              {t.translateFullArticle}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <select
-                              value={selectedLanguage}
-                              onChange={(e) => {
-                                setSelectedLanguage(e.target.value);
-                                handleTranslate(article.id, e.target.value);
-                              }}
-                              disabled={translating}
-                              className="font-mono text-xs border border-ink bg-white px-2.5 py-1.5 cursor-pointer outline-none font-semibold"
-                            >
-                              {SUPPORTED_TRANSLATION_LANGUAGES.map(l => (
-                                <option key={l.code} value={l.code}>{l.name}</option>
-                              ))}
-                            </select>
-
-                            <button
-                              type="button"
-                              onClick={() => handleTranslate(article.id, selectedLanguage)}
-                              disabled={translating}
-                              className="font-mono text-xs px-3 py-1.5 uppercase font-bold flex items-center gap-1.5"
-                            >
-                              {translating ? (
-                                <>
-                                  <Loader2 size={12} className="animate-spin" /> {t.translatingBtn}
-                                </>
-                              ) : (
-                                t.translateBtn
-                              )}
-                            </button>
-
-                            {isCurrentTranslation && (
-                              <button
-                                type="button"
-                                onClick={() => setShowOriginal(!showOriginal)}
-                                className="outline font-mono text-xs px-3 py-1.5 uppercase font-bold flex items-center gap-1"
-                                style={{ border: '1px solid var(--color-ink)' }}
-                              >
-                                {showOriginal ? t.viewTranslation : t.viewOriginal}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {translationError && (
-                          <div className="mt-2 text-alert font-mono text-xs">
-                            <strong>Translation Error:</strong> {translationError}
-                          </div>
-                        )}
-
-                        {isCurrentTranslation && translation && (
-                          <div className="mt-3 pt-2 border-top flex items-center justify-between font-mono text-xs text-muted flex-wrap gap-2">
-                            <span>
-                              {isTranslatedView ? (
-                                <>
-                                  {t.translatedFrom} <strong className="text-ink uppercase">{translation.original_language_name || translation.original_language}</strong> {t.into} <strong className="text-blue uppercase">{translation.target_language_name}</strong>
-                                </>
-                              ) : (
-                                <>
-                                  {t.viewingOriginal} (<strong className="text-ink uppercase">{translation.original_language_name || translation.original_language}</strong>)
-                                </>
-                              )}
-                            </span>
-                            {translation.cached && (
-                              <span className="bg-ink text-paper px-1.5 py-0.5 text-[10px] font-bold uppercase">
-                                {t.fromCache}
+                      return (
+                        <div key={article.id} className="newspaper-article">
+                          <div className="news-meta">
+                            <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
+                            <span className="date">{article.date}</span>
+                            {isSidebarTranslating && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse">
+                                <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
                               </span>
                             )}
                           </div>
-                        )}
-                      </div>
-                    )}
-
-                    <h3 className="font-display" style={{ fontSize: '3rem', lineHeight: '1.1', marginBottom: '1.5rem', textAlign: 'center' }}>
-                      {activeTitle}
-                    </h3>
-                    {article.imageUrl && (
-                      <img src={article.imageUrl} alt={activeTitle} className="news-image news-main-image" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
-                    )}
-                    <div className="news-meta justify-center mt-4">
-                      <span>{isTranslatedView && translation ? translation.target_language.toUpperCase() : article.category}</span>
-                      <span className="date">{article.date}</span>
-                    </div>
-                    
-                    <div className="font-ui text-base mb-6 mt-4">
-                      <div className="font-bold mb-3">{t.by} {article.source}</div>
-                      <div className="leading-relaxed space-y-4" style={{ color: 'var(--color-ink)' }}>
-                        {activeContent.split(/\n\s*\n/).filter(Boolean).map((para: string, pIdx: number) => (
-                          <p key={pIdx} className="mb-3 text-justify">{para.trim()}</p>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-center mt-6">
-                      <a href={article.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue font-bold font-mono border border-blue px-6 py-2" style={{ border: '2px solid var(--color-blue)' }}>{t.readMainSource}</a>
-                    </div>
+                          <h3 className="font-display text-xl mb-2">{activeTitle}</h3>
+                          <div className="font-ui text-sm mb-4">
+                            <div className="font-bold text-ink mb-1">{t.by} {article.source}</div>
+                            <div className="text-muted leading-relaxed">{activeExcerpt}</div>
+                          </div>
+                          <a href={article.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue text-xs font-bold font-mono inline-flex items-center gap-1">
+                            {t.readArticle} <ExternalLink size={12}/>
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-              
-              {displayArticles.length > 4 && (
-                <>
-                  <hr style={{ borderTop: '2px solid var(--color-ink)', margin: '2.5rem 0 1.5rem', opacity: 0.2 }} />
-                  
-                  {displayArticles.slice(4, 5).map(article => {
-                    const sidebarTrans = sidebarTranslations[article.id];
-                    const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
-                    const activeTitle = (sidebarTrans && !showOriginal)
-                      ? (sidebarTrans.translated_title || article.title)
-                      : article.title;
-                    const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
-                      ? (sidebarTrans.translated_content.slice(0, 200) + '...')
-                      : article.excerpt;
-                    const isTranslated = Boolean(sidebarTrans && !showOriginal);
 
-                    return (
-                      <div key={article.id} className="newspaper-article border-0 pb-0">
-                        <div className="news-meta justify-center mb-2">
-                          <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
-                          <span className="date">{article.date}</span>
-                          {isSidebarTranslating && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse ml-2">
-                              <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
-                            </span>
+                  {/* Center Column (Main Story) */}
+                  <div className="newspaper-col-center">
+                    {mainArticle && (() => {
+                      const isCurrentTranslation = Boolean(translation && translation.article_id === mainArticle.id);
+                      const activeTitle = (isCurrentTranslation && !showOriginal)
+                        ? (translation?.translated_title || mainArticle.title)
+                        : mainArticle.title;
+                      const activeContent = (isCurrentTranslation && !showOriginal)
+                        ? (translation?.translated_content || mainArticle.content || mainArticle.excerpt)
+                        : (mainArticle.content || mainArticle.excerpt);
+                      const isTranslatedView = isCurrentTranslation && !showOriginal;
+
+                      return (
+                        <div key={mainArticle.id} className="newspaper-article main-story border-0">
+                          <h3 className="font-display" style={{ fontSize: '2.5rem', lineHeight: '1.1', marginBottom: '1.25rem', textAlign: 'center' }}>
+                            {activeTitle}
+                          </h3>
+                          {mainArticle.imageUrl && (
+                            <img src={mainArticle.imageUrl} alt={activeTitle} className="news-image news-main-image" style={{ filter: 'grayscale(100%) contrast(1.2)' }} />
                           )}
-                        </div>
-                        <h3 className="font-display" style={{ fontSize: '2rem', lineHeight: '1.1', marginBottom: '1rem', textAlign: 'center' }}>{activeTitle}</h3>
-                        <div className="font-ui text-md mb-4 text-center">
-                          <span className="font-bold mr-2">{t.by} {article.source}</span>
-                          <span className="text-muted">{activeExcerpt}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-            </div>
+                          <div className="news-meta justify-center mt-4">
+                            <span>{isTranslatedView && translation ? translation.target_language.toUpperCase() : mainArticle.category}</span>
+                            <span className="date">{mainArticle.date}</span>
+                          </div>
+                          
+                          <div className="font-ui text-base mb-6 mt-4">
+                            <div className="font-bold mb-3">{t.by} {mainArticle.source}</div>
+                            <div className="leading-relaxed space-y-4" style={{ color: 'var(--color-ink)' }}>
+                              {activeContent.split(/\n\s*\n/).filter(Boolean).map((para: string, pIdx: number) => (
+                                <p key={pIdx} className="mb-3 text-justify">{para.trim()}</p>
+                              ))}
+                            </div>
+                          </div>
 
-            {/* Right Column */}
-            <div className="newspaper-col-right">
-              {displayArticles.slice(5).map(article => {
-                const sidebarTrans = sidebarTranslations[article.id];
-                const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
-                const activeTitle = (sidebarTrans && !showOriginal)
-                  ? (sidebarTrans.translated_title || article.title)
-                  : article.title;
-                const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
-                  ? (sidebarTrans.translated_content.slice(0, 200) + '...')
-                  : article.excerpt;
-                const isTranslated = Boolean(sidebarTrans && !showOriginal);
+                          <div className="flex justify-center mt-6">
+                            <a href={mainArticle.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue font-bold font-mono border border-blue px-6 py-2" style={{ border: '2px solid var(--color-blue)' }}>{t.readMainSource}</a>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    
+                    {centerSecondaryArticles.length > 0 && (
+                      <>
+                        <hr style={{ borderTop: '2px solid var(--color-ink)', margin: '2rem 0 1.5rem', opacity: 0.2 }} />
+                        
+                        {centerSecondaryArticles.map(article => {
+                          const sidebarTrans = sidebarTranslations[article.id];
+                          const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
+                          const activeTitle = (sidebarTrans && !showOriginal)
+                            ? (sidebarTrans.translated_title || article.title)
+                            : article.title;
+                          const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
+                            ? (sidebarTrans.translated_content.slice(0, 200) + '...')
+                            : article.excerpt;
+                          const isTranslated = Boolean(sidebarTrans && !showOriginal);
 
-                return (
-                  <div key={article.id} className="newspaper-article">
-                    <div className="news-meta">
-                      <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
-                      <span className="date">{article.date}</span>
-                      {isSidebarTranslating && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse">
-                          <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-display text-xl mb-2">{activeTitle}</h3>
-                    <div className="font-ui text-sm mb-4">
-                      <span className="font-bold mr-2">{t.by} {article.source}</span>
-                      <span className="text-muted">{activeExcerpt}</span>
-                    </div>
-                    <a href={article.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue text-xs font-bold font-mono inline-flex items-center gap-1">
-                      {t.readArticle} <ExternalLink size={12}/>
-                    </a>
+                          return (
+                            <div key={article.id} className="newspaper-article border-0 pb-0">
+                              <div className="news-meta justify-center mb-2">
+                                <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
+                                <span className="date">{article.date}</span>
+                                {isSidebarTranslating && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse ml-2">
+                                    <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="font-display" style={{ fontSize: '1.75rem', lineHeight: '1.1', marginBottom: '1rem', textAlign: 'center' }}>{activeTitle}</h3>
+                              <div className="font-ui text-md mb-4 text-center">
+                                <div className="font-bold text-ink mb-1">{t.by} {article.source}</div>
+                                <div className="text-muted leading-relaxed">{activeExcerpt}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Right Column */}
+                  <div className="newspaper-col-right">
+                    {rightArticles.map(article => {
+                      const sidebarTrans = sidebarTranslations[article.id];
+                      const isSidebarTranslating = Boolean(translatingSidebarIds[article.id]);
+                      const activeTitle = (sidebarTrans && !showOriginal)
+                        ? (sidebarTrans.translated_title || article.title)
+                        : article.title;
+                      const activeExcerpt = (sidebarTrans && !showOriginal && sidebarTrans.translated_content)
+                        ? (sidebarTrans.translated_content.slice(0, 200) + '...')
+                        : article.excerpt;
+                      const isTranslated = Boolean(sidebarTrans && !showOriginal);
+
+                      return (
+                        <div key={article.id} className="newspaper-article">
+                          <div className="news-meta">
+                            <span>{isTranslated ? sidebarTrans.target_language.toUpperCase() : article.category}</span>
+                            <span className="date">{article.date}</span>
+                            {isSidebarTranslating && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-blue font-mono font-bold animate-pulse">
+                                <Loader2 size={10} className="animate-spin" /> {t.translatingCard}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-display text-xl mb-2">{activeTitle}</h3>
+                          <div className="font-ui text-sm mb-4">
+                            <div className="font-bold text-ink mb-1">{t.by} {article.source}</div>
+                            <div className="text-muted leading-relaxed">{activeExcerpt}</div>
+                          </div>
+                          <a href={article.link} target="_blank" rel="noopener noreferrer" className="trace-link text-blue text-xs font-bold font-mono inline-flex items-center gap-1">
+                            {t.readArticle} <ExternalLink size={12}/>
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
 
           </div>
         )}
-      </section>}
+      </section>
 
       {/* Groq AI Detailed Analysis Section (Rendered when URL search is performed) */}
       {isInvestigating && (
-        <section className="px-8 mb-12 w-full fade-in pt-8" style={{ borderTop: '3px double var(--color-ink)' }}>
-          <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-ink text-paper p-2.5 flex items-center justify-center">
-                <Sparkles size={22} className="text-amber-400" />
-              </div>
-              <div>
-                <span className="font-mono text-xs text-muted uppercase tracking-wider block font-bold">GROQ AI ENGINE</span>
-                <h3 className="font-display text-2xl md:text-3xl m-0">{t.analysisTitle}</h3>
-              </div>
-            </div>
-            {investigatedReport && (
-              <div className="flex items-center gap-2 bg-paper border-all px-3 py-1.5 text-xs font-mono">
-                <Cpu size={14} className="text-blue" />
-                <span className="font-bold">{t.confidenceScore}: {(investigatedReport.confidence_score * 100).toFixed(0)}%</span>
-              </div>
-            )}
-          </div>
-
-          {loadingReport && !investigatedReport ? (
-            <div className="p-12 border-all border-dashed text-center font-mono text-muted flex flex-col items-center justify-center gap-3 bg-paper">
-              <Loader2 size={24} className="animate-spin text-ink" />
-              <span className="font-bold text-ink">{t.analyzingReport}</span>
-            </div>
-          ) : investigatedReport ? (
-            <div className="flex flex-col gap-6">
-              {/* Executive Summary */}
-              <div className="bg-paper border-all p-6 shadow-sm">
-                <span className="font-mono text-xs bg-ink text-paper px-2 py-0.5 uppercase mb-2 inline-block font-bold">{t.summaryTitle}</span>
-                <h4 className="font-display text-xl mb-2">{investigatedReport.headline}</h4>
-                <p className="font-ui text-md leading-relaxed text-ink mb-0">{investigatedReport.summary}</p>
-              </div>
-
-              {/* 4 Deep Insights Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* 1. Accuracy & Truth Assessment */}
-                <div className="border-all p-5 bg-white shadow-sm" style={{ borderLeft: '5px solid #10b981' }}>
-                  <div className="flex items-center gap-2 text-emerald-700 font-mono font-bold text-xs uppercase mb-3">
-                    <CheckCircle2 size={18} /> {t.sourcesTitle}
-                  </div>
-                  <p className="font-ui text-sm text-ink leading-relaxed m-0">
-                    {investigatedReport.accuracy_analysis || "Core factual claims maintain strong evidence consistency across primary coverage."}
-                  </p>
-                </div>
-
-                {/* 2. First Publisher / Origin */}
-                <div className="border-all p-5 bg-white shadow-sm" style={{ borderLeft: '5px solid #3b82f6' }}>
-                  <div className="flex items-center gap-2 text-blue font-mono font-bold text-xs uppercase mb-3">
-                    <Clock size={18} /> {t.primarySource}
-                  </div>
-                  <div className="font-ui text-sm">
-                    <span className="font-bold text-ink block mb-1">
-                      {t.primarySource}: <span className="text-blue font-mono">{investigatedReport.first_publisher || "Primary Publisher"}</span>
-                    </span>
-                    {investigatedReport.first_published_at && (
-                      <span className="font-mono text-xs text-muted block">
-                        Timestamp: {investigatedReport.first_published_at}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. Changed / Modified Claims */}
-                <div className="border-all p-5 bg-white shadow-sm" style={{ borderLeft: '5px solid #f59e0b' }}>
-                  <div className="flex items-center gap-2 text-amber-700 font-mono font-bold text-xs uppercase mb-3">
-                    <GitCompare size={18} /> {t.driftTitle}
-                  </div>
-                  <p className="font-ui text-sm text-ink leading-relaxed m-0">
-                    {investigatedReport.key_drifts && investigatedReport.key_drifts.length > 0 
-                      ? `${investigatedReport.key_drifts.length} modifications identified (e.g., ${investigatedReport.key_drifts[0].explanation}).`
-                      : t.noDrift}
-                  </p>
-                </div>
-
-                {/* 4. Churnalism & Fake / Exaggerated Values */}
-                <div className="border-all p-5 bg-white shadow-sm" style={{ borderLeft: '5px solid #ef4444' }}>
-                  <div className="flex items-center gap-2 text-red-700 font-mono font-bold text-xs uppercase mb-3">
-                    <Flame size={18} /> {t.correctionsTitle}
-                  </div>
-                  <p className="font-ui text-sm text-ink leading-relaxed m-0">
-                    {investigatedReport.churn_analysis || t.noCorrections}
-                  </p>
-                </div>
-              </div>
-
-              {/* Reader Takeaway */}
-              {investigatedReport.reader_takeaway && (
-                <div className="border-all p-5 bg-paper flex items-start gap-3 shadow-sm">
-                  <ShieldCheck size={22} className="text-blue flex-shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-mono text-xs font-bold uppercase text-muted block mb-1">{t.derivativeSource}</span>
-                    <p className="font-ui text-sm text-ink m-0 font-medium leading-relaxed">{investigatedReport.reader_takeaway}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-8 border-all text-center text-muted font-mono text-sm bg-paper">
-              Detailed AI analysis complete.
-            </div>
-          )}
-        </section>
+        <div className="px-8 w-full">
+          <StoryVerificationReport
+            reportData={investigatedReport}
+            loadingReport={loadingReport}
+            translatedReport={translatedReport}
+          />
+        </div>
       )}
 
     </div>

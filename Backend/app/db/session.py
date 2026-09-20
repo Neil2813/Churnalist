@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -42,9 +43,19 @@ def create_engine() -> AsyncEngine:
     engine = create_async_engine(
         settings.database_url,
         echo=settings.debug,
-        # SQLite-specific pragmas via connect_args
-        connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+        # SQLite-specific pragmas & timeout via connect_args
+        connect_args={"check_same_thread": False, "timeout": 30.0} if "sqlite" in settings.database_url else {},
     )
+
+    if "sqlite" in settings.database_url:
+        @event.listens_for(engine.sync_engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
+
     logger.info("database_engine_created", url=settings.database_url.split("///")[-1])
     return engine
 
