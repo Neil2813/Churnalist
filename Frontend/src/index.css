@@ -73,7 +73,7 @@ p {
 .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 4rem;
+  padding: 2rem 4rem !important;
 }
 
 @media (max-width: 900px) {
@@ -108,24 +108,28 @@ hr.editorial-rule-thin {
 /* Editorial Forensics Tables */
 .editorial-table {
   width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--color-border);
-  background-color: #FFFFFF;
-  font-size: 0.875rem;
+  border-collapse: separate;
+  border-spacing: 0 0.55rem;
+  border: 0;
+  background-color: transparent;
+  font-size: 0.8125rem;
   text-align: left;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
 }
 
 .editorial-table th {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background-color: var(--color-paper-dark);
-  color: var(--color-ink);
-  padding: 1rem 1.5rem;
-  border-bottom: 2px solid var(--color-ink);
-  border-right: 1px solid var(--color-border);
+  background-color: transparent;
+  color: var(--color-muted);
+  padding: 0 0.85rem 0.25rem;
+  border-bottom: 0;
+  border-right: 0;
   white-space: nowrap;
 }
 
@@ -133,38 +137,57 @@ hr.editorial-rule-thin {
   border-right: none;
 }
 
+.editorial-table th:not(:last-child) {
+  border-right: 1px solid #DCE2EA;
+}
+
 .editorial-table td {
   font-family: var(--font-ui);
-  font-size: 0.875rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  border-right: 1px solid var(--color-border);
+  font-size: 0.8125rem;
+  padding: 0.8rem 0.85rem;
+  border-top: 1px solid #DED8CC;
+  border-bottom: 1px solid #DED8CC;
+  border-right: 0;
   color: var(--color-ink);
   vertical-align: middle;
-  line-height: 1.6;
+  line-height: 1.35;
 }
 
 .editorial-table td:last-child {
   border-right: none;
+  border-radius: 0 8px 8px 0;
 }
 
+.editorial-table td:not(:last-child) {
+  border-right: 0;
+}
+
+.editorial-table tbody tr { --report-card-surface: #FFFDF9; }
+.editorial-table tbody td { background: var(--report-card-surface); }
+.editorial-table tbody td:first-child {
+  border-left: 4px solid #9A8E7A;
+  border-radius: 8px 0 0 8px;
+}
+
+.editorial-table tbody tr:nth-child(even) { --report-card-surface: #F7F2E9; }
+
 .editorial-table tr:hover td {
-  background-color: #F8F5EE;
+  background-color: #F8F4EC;
 }
 
 .editorial-table tr:last-child td {
-  border-bottom: none;
+  border-bottom: 1px solid #DED8CC;
 }
 
 /* Matrix Table Specifics */
-.editorial-table .matrix-header {
-  background-color: #E6E0D2;
-  font-weight: 700;
-}
+.editorial-table .matrix-header { background-color: transparent; font-weight: 700; }
 
 .editorial-table .matrix-cell-diff {
-  background-color: #FDF2F2 !important;
-  border: 1px solid #F87171 !important;
+  background-color: var(--report-card-surface) !important;
+  border-top-color: #DED8CC !important;
+  border-bottom-color: #DED8CC !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
   color: var(--color-alert) !important;
   font-weight: 700;
 }
@@ -178,11 +201,11 @@ hr.editorial-rule-thin {
 .badge-status {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.25rem 0.6rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 2px;
   line-height: 1;
 }
@@ -199,21 +222,21 @@ hr.editorial-rule-thin {
 
 .section-title-editorial {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 400;
   color: var(--color-ink);
   letter-spacing: 0.02em;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding-bottom: 0.75rem;
+  margin-top: 0;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.55rem;
   border-bottom: 1px solid var(--color-ink);
 }
 
-.section-container {
-  margin-bottom: 3.5rem;
-}
+.section-container { margin-bottom: 2.25rem; }
+
 
 /* Hard Edges & Forms */
 input, button, .box {

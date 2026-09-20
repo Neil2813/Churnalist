@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Globe, ArrowLeft, 
-  ExternalLink 
+import {
+  Globe, ArrowLeft,
+  ExternalLink
 } from 'lucide-react';
 import { api } from '../api';
 import type { EventDetailResponse, DriftReport, Correction, ReportResponse, ArticleTranslationResponse } from '../api';
@@ -20,7 +20,7 @@ export default function Investigation() {
   const [loading, setLoading] = useState(true);
   const [loadingReport, setLoadingReport] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Full article translation states
   const [articleTranslations, setArticleTranslations] = useState<Record<string, ArticleTranslationResponse>>({});
   const [translatingArticles, setTranslatingArticles] = useState<Record<string, boolean>>({});
@@ -55,21 +55,21 @@ export default function Investigation() {
 
   useEffect(() => {
     if (!eventId) return;
-    
+
     let active = true;
-    
+
     const pollEvent = async () => {
       if (!active) return;
       try {
         const evDetail = await api.getEvent(eventId);
         if (active) setEventData(evDetail);
-        
+
         if (evDetail.status === 'READY' || evDetail.article_count > 0) {
           fetchAnalysis(eventId);
           if (evDetail.status !== 'READY') {
             setTimeout(pollEvent, 5000);
           } else {
-             setLoading(false);
+            setLoading(false);
           }
         } else {
           setTimeout(pollEvent, 3000);
@@ -188,8 +188,8 @@ export default function Investigation() {
 
       {/* Ingested Source Articles Reference Table */}
       {eventData.articles && eventData.articles.length > 0 && (
-        <div className="mt-10 pt-6 border-t-2 border-ink">
-          <div className="section-title-editorial mb-3">
+        <div className="section-container mt-12 pt-8 border-t-2 border-ink">
+          <div className="section-title-editorial">
             <span>INGESTED SOURCE ARTICLES</span>
             <span className="font-mono text-xs font-bold text-muted uppercase">
               {eventData.articles.length} SOURCES INDEXED

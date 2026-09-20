@@ -35,7 +35,7 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
   const titleText = eventData?.title ? eventData.title.toUpperCase() : "AVINASHI BUS CRASH";
 
   return (
-    <div className="w-full text-ink font-ui pt-2">
+    <div className="w-full text-ink font-ui pt-2" style={{ paddingLeft: '2rem', paddingRight: '2rem' }}>
       {/* ==================================================
           2. PAGE HEADER
       ================================================== */}
@@ -73,33 +73,12 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
             <AlertTriangle size={13} /> NUMERICAL DRIFT DETECTED
           </span>
         </div>
-
         <div className="overflow-x-auto mb-3">
           <table className="editorial-table">
-            <thead>
-              <tr>
-                <th style={{ width: '15%' }}>CLAIM</th>
-                <th style={{ width: '20%' }}>EARLIEST REPORT</th>
-                <th style={{ width: '20%' }}>LATER REPORT</th>
-                <th style={{ width: '20%' }}>LATEST REPORT</th>
-                <th style={{ width: '25%' }}>CHANGE</th>
-              </tr>
-            </thead>
+            <thead><tr><th style={{ width: '15%' }}>CLAIM</th><th style={{ width: '20%' }}>EARLIEST REPORT</th><th style={{ width: '20%' }}>LATER REPORT</th><th style={{ width: '20%' }}>LATEST REPORT</th><th style={{ width: '25%' }}>CHANGE</th></tr></thead>
             <tbody>
-              <tr>
-                <td className="font-semibold">Deaths</td>
-                <td>17</td>
-                <td className="text-changed">19</td>
-                <td className="text-changed">20</td>
-                <td className="text-changed">17 → 19 → 20</td>
-              </tr>
-              <tr>
-                <td className="font-semibold">Injured</td>
-                <td>~22</td>
-                <td className="text-changed">~23</td>
-                <td className="text-changed">22+</td>
-                <td className="text-changed">evolving</td>
-              </tr>
+              <tr><td className="font-semibold">Deaths</td><td>17</td><td className="text-changed">19</td><td className="text-changed">20</td><td className="text-changed">17 → 19 → 20</td></tr>
+              <tr><td className="font-semibold">Injured</td><td>~22</td><td className="text-changed">~23</td><td className="text-changed">22+</td><td className="text-changed">evolving</td></tr>
             </tbody>
           </table>
         </div>
@@ -109,116 +88,77 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
         </p>
       </div>
 
-      {/* ==================================================
-          4. STORY TIMELINE & 5. CLAIM EVOLUTION (02 & 03)
-      ================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 section-container">
-        
-        {/* 02 · STORY TIMELINE */}
-        <div>
-          <div className="section-title-editorial">
-            <span>02 · STORY TIMELINE</span>
-            <span className="font-mono text-xs text-muted uppercase">CHRONOLOGICAL EVOLUTION</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="editorial-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '18%' }}>TIME</th>
-                  <th style={{ width: '32%' }}>SOURCE</th>
-                  <th style={{ width: '18%' }}>LANG</th>
-                  <th style={{ width: '32%' }}>REPORTED CLAIM</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-tamil')}>
-                  <td className="font-mono text-muted text-xs">08:37 AM</td>
-                  <td className="font-semibold">Tamil Indian Express</td>
-                  <td className="font-mono text-muted text-xs">Tamil</td>
-                  <td><span className="text-changed">20 dead</span> · 22+ injured</td>
-                </tr>
-                <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-toi')}>
-                  <td className="font-mono text-muted text-xs">11:00 AM</td>
-                  <td className="font-semibold">Times of India</td>
-                  <td className="font-mono text-muted text-xs">English</td>
-                  <td>17 dead · ~22 injured</td>
-                </tr>
-                <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-nie')}>
-                  <td className="font-mono text-muted text-xs">12:52 PM</td>
-                  <td className="font-semibold">New Indian Express</td>
-                  <td className="font-mono text-muted text-xs">English</td>
-                  <td><span className="text-changed">19 dead</span> · ~23 injured</td>
-                </tr>
-                <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-au')}>
-                  <td className="font-mono text-muted text-xs">01:15 PM</td>
-                  <td className="font-semibold">Amar Ujala</td>
-                  <td className="font-mono text-muted text-xs">Hindi</td>
-                  <td><span className="text-changed">20 dead</span></td>
-                </tr>
-                <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-nbt')}>
-                  <td className="font-mono text-muted text-xs">Later</td>
-                  <td className="font-semibold">Navbharat Times</td>
-                  <td className="font-mono text-muted text-xs">Hindi</td>
-                  <td><span className="text-changed">20 dead</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {/* 02 · STORY TIMELINE */}
+      <div className="section-container">
+        <div className="section-title-editorial">
+          <span>02 · STORY TIMELINE</span>
+          <span className="font-mono text-xs text-muted uppercase">CHRONOLOGICAL EVOLUTION</span>
         </div>
 
-        {/* 03 · CLAIM EVOLUTION */}
-        <div>
-          <div className="section-title-editorial">
-            <span>03 · CLAIM EVOLUTION</span>
-            <span className="font-mono text-xs text-muted uppercase">TRANSFORMATION MATRIX</span>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="editorial-table">
+            <thead><tr><th style={{ width: '18%' }}>TIME</th><th style={{ width: '32%' }}>SOURCE</th><th style={{ width: '18%' }}>LANG</th><th style={{ width: '32%' }}>REPORTED CLAIM</th></tr></thead>
+            <tbody>
+              <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-tamil')}><td className="font-mono text-muted text-xs">08:37 AM</td><td className="font-semibold">Tamil Indian Express</td><td className="font-mono text-muted text-xs">Tamil</td><td><span className="text-changed">20 dead</span> · 22+ injured</td></tr>
+              <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-toi')}><td className="font-mono text-muted text-xs">11:00 AM</td><td className="font-semibold">Times of India</td><td className="font-mono text-muted text-xs">English</td><td>17 dead · ~22 injured</td></tr>
+              <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-nie')}><td className="font-mono text-muted text-xs">12:52 PM</td><td className="font-semibold">New Indian Express</td><td className="font-mono text-muted text-xs">English</td><td><span className="text-changed">19 dead</span> · ~23 injured</td></tr>
+              <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-au')}><td className="font-mono text-muted text-xs">01:15 PM</td><td className="font-semibold">Amar Ujala</td><td className="font-mono text-muted text-xs">Hindi</td><td><span className="text-changed">20 dead</span></td></tr>
+              <tr className="hover:bg-paper-dark cursor-pointer" onClick={() => onSelectArticle && onSelectArticle('art-nbt')}><td className="font-mono text-muted text-xs">Later</td><td className="font-semibold">Navbharat Times</td><td className="font-mono text-muted text-xs">Hindi</td><td><span className="text-changed">20 dead</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <div className="overflow-x-auto">
-            <table className="editorial-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '22%' }}>CLAIM</th>
-                  <th style={{ width: '32%' }}>SOURCE</th>
-                  <th style={{ width: '15%' }}>VALUE</th>
-                  <th style={{ width: '13%' }}>TIME</th>
-                  <th style={{ width: '18%' }}>RELATION</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="font-semibold">Death toll</td>
-                  <td>Times of India</td>
-                  <td>17</td>
-                  <td className="font-mono text-xs text-muted">11:00</td>
-                  <td><span className="badge-status badge-baseline">BASELINE</span></td>
-                </tr>
-                <tr>
-                  <td className="font-semibold">Death toll</td>
-                  <td>New Indian Express</td>
-                  <td className="text-changed">19</td>
-                  <td className="font-mono text-xs text-muted">12:52</td>
-                  <td><span className="badge-status badge-drift">NUMERICAL DRIFT</span></td>
-                </tr>
-                <tr>
-                  <td className="font-semibold">Death toll</td>
-                  <td>Navbharat Times</td>
-                  <td className="text-changed">20</td>
-                  <td className="font-mono text-xs text-muted">Later</td>
-                  <td><span className="badge-status badge-drift">NUMERICAL DRIFT</span></td>
-                </tr>
-                <tr>
-                  <td className="font-semibold">Death toll</td>
-                  <td>Tamil Indian Express</td>
-                  <td className="text-changed">20</td>
-                  <td className="font-mono text-xs text-muted">08:37</td>
-                  <td><span className="badge-status badge-same">SAME</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {/* 03 · CLAIM EVOLUTION */}
+      <div className="section-container">
+        <div className="section-title-editorial">
+          <span>03 · CLAIM EVOLUTION</span>
+          <span className="font-mono text-xs text-muted uppercase">TRANSFORMATION MATRIX</span>
         </div>
 
+        <div className="overflow-x-auto">
+          <table className="editorial-table">
+            <thead>
+              <tr>
+                <th style={{ width: '22%' }}>CLAIM</th>
+                <th style={{ width: '32%' }}>SOURCE</th>
+                <th style={{ width: '15%' }}>VALUE</th>
+                <th style={{ width: '13%' }}>TIME</th>
+                <th style={{ width: '18%' }}>RELATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="font-semibold">Death toll</td>
+                <td>Times of India</td>
+                <td>17</td>
+                <td className="font-mono text-xs text-muted">11:00</td>
+                <td><span className="badge-status badge-baseline">BASELINE</span></td>
+              </tr>
+              <tr>
+                <td className="font-semibold">Death toll</td>
+                <td>New Indian Express</td>
+                <td className="text-changed">19</td>
+                <td className="font-mono text-xs text-muted">12:52</td>
+                <td><span className="badge-status badge-drift">NUMERICAL DRIFT</span></td>
+              </tr>
+              <tr>
+                <td className="font-semibold">Death toll</td>
+                <td>Navbharat Times</td>
+                <td className="text-changed">20</td>
+                <td className="font-mono text-xs text-muted">Later</td>
+                <td><span className="badge-status badge-drift">NUMERICAL DRIFT</span></td>
+              </tr>
+              <tr>
+                <td className="font-semibold">Death toll</td>
+                <td>Tamil Indian Express</td>
+                <td className="text-changed">20</td>
+                <td className="font-mono text-xs text-muted">08:37</td>
+                <td><span className="badge-status badge-same">SAME</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* ==================================================
@@ -352,7 +292,7 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       ================================================== */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>07 · INTERNAL CONSISTENCY</span>
+          <span>06 · INTERNAL CONSISTENCY</span>
           <span className="font-mono text-xs font-bold text-alert uppercase">INTERNAL SOURCE INCONSISTENCY</span>
         </div>
 

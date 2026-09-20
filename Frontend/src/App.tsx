@@ -7,7 +7,7 @@ import Provenance from './pages/Provenance';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import type { SupportedLanguage } from './utils/uiTranslations';
 import './index.css';
-import './App.css'; 
+import './App.css';
 
 function AppContent() {
   const { t, language, setLanguage } = useLanguage();
@@ -15,7 +15,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-paper text-ink" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* Main Header */}
       <header className="w-full flex items-center justify-between" style={{ padding: '1rem 2rem', maxWidth: '100%', borderTop: '1px solid var(--color-ink)', borderBottom: '1px solid var(--color-ink)', position: 'relative' }}>
         {/* Logo Left - Always Churnalist */}
@@ -30,16 +30,16 @@ function AppContent() {
 
         {/* Center Nav */}
         <nav className="nav-center-menu">
-          <NavLink 
-            to="/" 
+          <NavLink
+            to="/"
             end
             className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
           >
             {t.investigate}
           </NavLink>
           <span className="nav-divider">|</span>
-          <NavLink 
-            to="/stories" 
+          <NavLink
+            to="/stories"
             className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
           >
             {t.stories}
@@ -54,7 +54,7 @@ function AppContent() {
           <div style={{ borderLeft: '1px solid var(--color-border)', paddingLeft: '1.5rem', height: '50px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <p className="font-display" style={{ fontSize: '0.75rem', lineHeight: '1.2', margin: 0 }}>
               {t.tagline.split('.').filter(Boolean).map((chunk, idx) => (
-                <span key={idx}>{chunk.trim()}{idx === 0 ? '.' : ''}<br/></span>
+                <span key={idx}>{chunk.trim()}{idx === 0 ? '.' : ''}<br /></span>
               ))}
             </p>
 
