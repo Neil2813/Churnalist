@@ -1,6 +1,6 @@
-# DRIFT Backend Engine
+# Churnalist Backend Engine
 
-The **DRIFT Backend** ingests articles, dispatches multi-agent analysis jobs, and coordinates a five-agent intelligence core that hunts sources, weaves events, mines claims, investigates drift, and builds a truth trail—backed by an LLM inference engine, a vector/lexical retrieval layer, an evidence store, and pipeline telemetry.
+The **Churnalist Backend** ingests articles, dispatches multi-agent analysis jobs, and coordinates a five-agent intelligence core that hunts sources, weaves events, mines claims, investigates drift, and builds a truth trail—backed by an LLM inference engine, a vector/lexical retrieval layer, an evidence store, and pipeline telemetry.
 
 ---
 
@@ -125,4 +125,4 @@ Interactive API Documentation: `http://localhost:8000/docs`
 
 ---
 
-**Churnalist / DRIFT Backend** — *tracing every claim back to the truth.*
+**Churnalist Backend** — *tracing every claim back to the truth.*

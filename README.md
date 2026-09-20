@@ -1,8 +1,8 @@
-# Churnalist / DRIFT
+# Churnalist
 
 ### Autonomous AI-Driven News Provenance & Claim Drift Intelligence
 
-**Churnalist (DRIFT)** is a multi-agent platform that continuously traces how a news story's factual claims move, change, and get corrected as they spread across outlets, languages, and time. It hunts down the original sources feeding a story, weaves together the underlying sequence of events, mines the atomic factual claims being made, investigates how those claims drift between publications, and lays down an evidence-backed truth trail—turning a scattered set of articles into a single, navigable lineage of fact.
+**Churnalist** is a multi-agent platform that continuously traces how a news story's factual claims move, change, and get corrected as they spread across outlets, languages, and time. It hunts down the original sources feeding a story, weaves together the underlying sequence of events, mines the atomic factual claims being made, investigates how those claims drift between publications, and lays down an evidence-backed truth trail—turning a scattered set of articles into a single, navigable lineage of fact.
 
 The platform moves news analysis from static, single-article reading to a proactive, evidence-backed investigation workflow. Editors and readers interact through an investigation and provenance workspace while a coordinated agent pipeline handles source discovery, claim mining, drift detection, and correction tracking end-to-end across English, Hindi, Tamil, Telugu, Bengali, and Kannada.
 
@@ -36,7 +36,7 @@ A news claim rarely stays fixed once it is published. It gets picked up, transla
 * **Whether a number, quote, or claim has mutated** as it moved downstream
 * **Whether a correction or retraction was ever issued**, and whether the uncorrected version is still circulating
 
-Traditional news aggregation treats every article as an independent, disconnected unit. **Churnalist / DRIFT** instead treats a story as a graph: sources, claims, and the edges connecting them so drift, churn, and silent corrections become visible rather than invisible.
+Traditional news aggregation treats every article as an independent, disconnected unit. **Churnalist** instead treats a story as a graph: sources, claims, and the edges connecting them so drift, churn, and silent corrections become visible rather than invisible.
 
 ---
 
@@ -248,7 +248,7 @@ FastAPI backend, versioned under `/api/v1`.
 ## Project Structure
 
 ```text
-Drift/
+Churnalist/
 ├── Backend/
 │   ├── alembic/                       # Database migrations
 │   ├── app/
@@ -352,5 +352,5 @@ pytest
 
 ---
 
-**Churnalist (DRIFT)** — *tracing every claim back to the truth.*  
+**Churnalist** — *tracing every claim back to the truth.*  
 Built by team CodeFather.
