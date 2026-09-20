@@ -1,6 +1,6 @@
-# DRIFT Frontend Workspace
+# Churnalist Frontend Workspace
 
-The **DRIFT Frontend** is the editorial workspace where a news story's claims, sources, and drift are made visible through a home dashboard, an investigation/editorial trace view, a claim provenance/lineage view, and story clustering—all backed by live streaming from the backend.
+The **Churnalist Frontend** is the editorial workspace where a news story's claims, sources, and drift are made visible through a home dashboard, an investigation/editorial trace view, a claim provenance/lineage view, and story clustering—all backed by live streaming from the backend.
 
 ---
 
@@ -51,4 +51,4 @@ Frontend development server runs at `http://localhost:5173`
 
 ---
 
-**Churnalist / DRIFT Frontend** — *tracing every claim back to the truth.*
+**Churnalist Frontend** — *tracing every claim back to the truth.*
