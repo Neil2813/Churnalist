@@ -18,7 +18,7 @@ from app.core.lifecycle import lifespan
 settings = get_settings()
 
 app = FastAPI(
-    title="DRIFT — News Provenance Intelligence",
+    title="Churnalist — News Provenance Intelligence",
     description=(
         "Reconstruct the lifecycle of information: original source → "
         "published article → multilingual rewrite → claim drift → correction."
