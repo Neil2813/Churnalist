@@ -98,7 +98,7 @@ class SourceHunterAgent:
         max_articles: int = 10,
     ) -> list[Article]:
         """
-        Live ingest and attach the 4 exact target articles to the event.
+        
         """
         import json
         from app.ingestion.providers.duckduckgo import TARGET_ARTICLES, clean_url
