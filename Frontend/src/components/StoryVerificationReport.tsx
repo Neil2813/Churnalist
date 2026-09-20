@@ -12,6 +12,36 @@ interface StoryVerificationReportProps {
   onSelectArticle?: (articleId: string) => void;
 }
 
+const ChartLegend: React.FC<{ items: { label: string; tone?: 'alert' | 'ink' }[] }> = ({ items }) => (
+  <div className="chart-legend">{items.map(({ label, tone = 'ink' }) => <span key={label}><i className={`legend-dot ${tone}`} />{label}</span>)}</div>
+);
+
+const PrimaryClaimChart: React.FC = () => (
+  <div className="claim-chart" aria-label="Deaths changed from 17 to 19 to 20; injured changed from approximately 22 to approximately 23 to 22 plus">
+    <div className="chart-y-label">Reported count</div>
+    <svg viewBox="0 0 430 180" role="img" aria-hidden="true">
+      <line className="chart-grid" x1="42" y1="25" x2="415" y2="25" /><line className="chart-grid" x1="42" y1="83" x2="415" y2="83" /><line className="chart-axis" x1="42" y1="145" x2="415" y2="145" />
+      <polyline className="chart-line alert" points="70,104 225,92 380,85" /><polyline className="chart-line ink" points="70,64 225,53 380,51" />
+      {[['70','104','17'],['225','92','19'],['380','85','20']].map(([x,y,value]) => <g key={value}><circle className="chart-point alert" cx={x} cy={y} r="5" /><text x={x} y={Number(y)+23} textAnchor="middle">{value}</text></g>)}
+      {[['70','64','~22'],['225','53','~23'],['380','51','22+']].map(([x,y,value]) => <g key={value}><circle className="chart-point ink" cx={x} cy={y} r="5" /><text x={x} y={Number(y)-11} textAnchor="middle">{value}</text></g>)}
+      <text x="70" y="171" textAnchor="middle">Earliest</text><text x="225" y="171" textAnchor="middle">Later</text><text x="380" y="171" textAnchor="middle">Latest</text>
+    </svg>
+    <ChartLegend items={[{ label: 'Deaths', tone: 'alert' }, { label: 'Injured' }]} />
+  </div>
+);
+
+const DeathTollChart: React.FC = () => {
+  const items = [['Times of India', 17, 'BASELINE'], ['New Indian Express', 19, 'NUMERICAL DRIFT'], ['Navbharat Times', 20, 'NUMERICAL DRIFT'], ['Tamil IE', 20, 'SAME']];
+  return <div className="bar-chart">{items.map(([name, value, status], index) => <div className="bar-group" key={name as string}><b>{value}</b><i style={{ height: `${Number(value) * 4}px` }} className={index ? 'alert' : ''} /><span>{name}</span><em>{status}</em></div>)}</div>;
+};
+
+const Donut: React.FC<{ value: string; alert?: boolean }> = ({ value, alert = false }) => <div className={`donut ${alert ? 'alert' : ''}`}><span>{value}</span></div>;
+
+const GroupedBars: React.FC = () => {
+  const bars = [['17', '22'], ['19', '23'], ['20', '20'], ['20', '22']];
+  return <div className="grouped-bars">{bars.map(([deaths, injured], index) => <div className="group" key={index}><div><i className="death" style={{ height: `${Number(deaths) * 3}px` }} /><b>{deaths}</b></div><div><i className="injury" style={{ height: `${Number(injured) * 3}px` }} /><b>{index === 1 ? '~23' : index === 3 ? '22+' : index === 2 ? '20+' : '~22'}</b></div></div>)}</div>;
+};
+
 export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = ({
   eventData,
   driftData,
@@ -39,9 +69,9 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       {/* ==================================================
           2. PAGE HEADER
       ================================================== */}
-      <div className="flex flex-wrap justify-between items-end pb-5 mb-8 border-b-2 border-ink">
+      <div className="story-report-header flex flex-wrap justify-between items-end pb-5 mb-8 border-b-2 border-ink">
         <div className="space-y-1">
-          <div className="font-mono text-xs font-bold tracking-widest text-muted uppercase mb-1.5">
+          <div className="story-trace-kicker font-mono text-xs font-bold tracking-widest text-muted uppercase mb-1.5">
             CHURNALIST <span className="mx-1.5">•</span> <span className="text-blue">STORY TRACE & INVESTIGATION</span>
           </div>
           <h1 className="font-display text-3xl md:text-4xl lg:text-5xl text-ink m-0 tracking-tight leading-none uppercase">
@@ -63,16 +93,18 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
         </div>
       </div>
 
+      <div className="investigation-card-grid">
       {/* ==================================================
           3. PRIMARY FINDING — TURN INTO A TABLE (01)
       ================================================== */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>01 · PRIMARY CLAIM EVOLUTION</span>
+          <span>01. PRIMARY CLAIM EVOLUTION</span>
           <span className="font-mono text-xs font-bold text-alert uppercase flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-3 py-1">
             <AlertTriangle size={13} /> NUMERICAL DRIFT DETECTED
           </span>
         </div>
+        <PrimaryClaimChart />
         <div className="overflow-x-auto mb-3">
           <table className="editorial-table">
             <thead><tr><th style={{ width: '15%' }}>CLAIM</th><th style={{ width: '20%' }}>EARLIEST REPORT</th><th style={{ width: '20%' }}>LATER REPORT</th><th style={{ width: '20%' }}>LATEST REPORT</th><th style={{ width: '25%' }}>CHANGE</th></tr></thead>
@@ -91,7 +123,7 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       {/* 02 · STORY TIMELINE */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>02 · STORY TIMELINE</span>
+          <span>02. STORY TIMELINE</span>
           <span className="font-mono text-xs text-muted uppercase">CHRONOLOGICAL EVOLUTION</span>
         </div>
 
@@ -112,9 +144,10 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       {/* 03 · CLAIM EVOLUTION */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>03 · CLAIM EVOLUTION</span>
+          <span>03. CLAIM EVOLUTION</span>
           <span className="font-mono text-xs text-muted uppercase">TRANSFORMATION MATRIX</span>
         </div>
+        <DeathTollChart />
 
         <div className="overflow-x-auto">
           <table className="editorial-table">
@@ -166,11 +199,12 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       ================================================== */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>04 · SOURCES & COVERAGE</span>
+          <span>04. SOURCES & COVERAGE</span>
           <span className="font-mono text-xs font-bold text-muted uppercase tracking-wide">
             {langCount} LANGUAGES · {artCount} ARTICLES · {claimCount} CLAIMS
           </span>
         </div>
+        <div className="donut-layout"><Donut value={`${claimCount} claims`} /><ChartLegend items={[{ label: 'Times of India' }, { label: 'Amar Ujala' }, { label: 'Indian Express Tamil' }, { label: 'Navbharat Times' }]} /></div>
 
         <div className="overflow-x-auto">
           <table className="editorial-table">
@@ -236,9 +270,10 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       ================================================== */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>05 · CLAIM COMPARISON</span>
+          <span>05. CLAIM COMPARISON</span>
           <span className="font-mono text-xs text-muted uppercase">CROSS-SOURCE COMPARISON MATRIX</span>
         </div>
+        <div className="comparison-chart"><ChartLegend items={[{ label: 'Deaths', tone: 'alert' }, { label: 'Injured' }]} /><GroupedBars /></div>
 
         <div className="overflow-x-auto">
           <table className="editorial-table">
@@ -292,9 +327,10 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
       ================================================== */}
       <div className="section-container">
         <div className="section-title-editorial">
-          <span>06 · INTERNAL CONSISTENCY</span>
+          <span>06. INTERNAL CONSISTENCY</span>
           <span className="font-mono text-xs font-bold text-alert uppercase">INTERNAL SOURCE INCONSISTENCY</span>
         </div>
+        <div className="donut-layout"><Donut value="1 issue" alert /><span className="font-mono text-xs text-muted">INTERNAL SOURCE INCONSISTENCY</span></div>
 
         <div className="overflow-x-auto">
           <table className="editorial-table">
@@ -318,6 +354,7 @@ export const StoryVerificationReport: React.FC<StoryVerificationReportProps> = (
         </div>
       </div>
 
+      </div>
     </div>
   );
 };
